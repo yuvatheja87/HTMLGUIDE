@@ -1,0 +1,378 @@
+<html>
+<head>
+	<title>JAVA</title>
+	<link rel="stylesheet" type="text/css" href="styles.css" />
+	<script type="text/javascript" src="myscript.js"></script>
+</head>
+<body>
+<center><h1>HIBERNATE</h1></center>
+<div id="tabhead">
+	<ul id="tabs" style="list-style-type:none">
+		<li><a href="index.html">HOME</a></li>
+		<li><a href="java.html">JAVA</a></li>
+		<li><a href="python.html">PYTHON*</a></li>
+		<li><a href="qa.html">QA</a></li>
+		<li><a href="ui.html">UI</a></li>
+		<li><a href="linux.html">LINUX ESSENTIALS</a></li>
+		<li><a href="devops.html">DEVOPS</a></li>
+		<li><a href="aws.html">AWS</a></li>
+	</ul>
+</div>
+<div id="tabhead">
+	<ul id="tabs" style="list-style-type:none">
+		<li><a href="java.html">JAVA</a></li>
+		<li><a href="hibernate.html">HIBERNATE</a></li>
+		<li><a href="sql.html">SQL</a></li>
+		<li><a href="ant.html">ANT</a></li>
+		<li><a href="maven.html">MAVEN</a></li>
+		
+		<li><a href="junit.html">JUnit</a></li>
+		
+		<li><a href="html.html">HTML</a></li>
+		<li><a href="css.html">CSS</a></li>
+		<li><a href="git.html">GIT(HUB)</a></li>
+		<li><a href="jenkins.html">JENKINS</a></li>
+	</ul>
+</div>
+<pre>Object Relational Mapping (ORM) overcomes
+	Mapping member variables to columns
+	Mapping relationships
+	Handling data types
+	Managing changes to object state
+<h3>HIBERNATE</h3>
+	Download hibernate binaries (jar)
+	<b>Saving without hibernate</b>
+		JDBC Configuration
+		Model Object
+		Service method to create the model object
+		Database design
+		DAO method to save the object using SQL queries
+	<b>Saving with hibernate</b>
+		JDBC Configuration-Hibernate configuration
+		Model Object-Annotations
+		Service method to create the model object-use the Hibernate API
+		Database design-not needed
+		DAO- not needed
+<h3>JDBC Connection</h3>
+	create hibernate.cfg.xml file
+	POSTGRESQL
+	class-org.postgresql.Driver
+	url=jdbc:postgresql://host:port/DB
+		jdbc:postgresql://localhost:5432/hibernatedb
+	ORACLE
+	class=oracle.jdbc.driver.OracleDriver
+	url=jdbc:oracle:thin:@localhost:1521/xe
+Using Hibernate API
+<h4>Create session factory</h4>
+	SessionFactory sessionfactory = new Configuration().configure().buildSessionFactory();
+<h4>Create sessions from the session factory</h4>
+	Session session1=sessionfactory.openSession();
+	session1.beginTransaction();
+<h4>session to save model object</h4>
+	session.save(user);
+	session.getTransaction().commit();
+	session.close();
+<b>hibernate.cfg.xml</b>	
+<textarea rows="20" cols="95">
+ <?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+
+<hibernate-configuration>
+    <session-factory>
+        <!-- Database connection settings -->
+        <!-- <property name="connection.driver_class">org.hsqldb.jdbcDriver</property>
+                    <property name="connection.url">jdbc:hsqldb:hsql://localhost/TestDB</property> -->
+
+        <property name="connection.driver_class">oracle.jdbc.driver.OracleDriver</property>
+        <property name="connection.url">jdbc:oracle:thin:@localhost:1521/xe</property>
+        <property name="connection.username">yuva</property>
+        <property name="connection.password">yuva</property>
+
+        <!-- JDBC connection pool (use the built-in) -->
+        <property name="connection.pool_size">1</property>
+
+        <!-- SQL dialect -->
+        <property name="dialect">
+            org.hibernate.dialect.Oracle10gDialect
+        </property>
+
+        <property name="current_session_context_class">thread</property>
+        <!-- Echo all executed SQL to stdout -->
+        <property name="show_sql">true</property>
+
+		<!-- Drop and re-create the database schema on startup -->
+		<!-- <property name="hibernate.hbm2ddl.auto">create</property> -->
+		<!-- Updates the database schema on startup -->
+		<property name="hibernate.hbm2ddl.auto">update</property>
+       
+		<!-- Names the annotated entity class -->
+		<mapping class="org.yuva.hibernate.userdetails"/>
+	</session-factory>
+</hibernate-configuration></textarea>	
+<h3>Annotations</h3>
+	@Entity	->creates class name as table name
+	@Entity (name="USER_DETAILS") ->Uses name attribute as table name
+	@Id ->uses variable as primarykey
+<textarea rows="20" cols="95">
+@Entity(name="USER_DETAILS")
+@Table (name="USERDETAILS")
+public class userdetails {
+	
+	@Id //@GeneratedValue(strategy=GenerationType.AUTO) ->genrated value will generate integer value and 
+	@Column(name="USER_ID")
+	private int userId;
+	@Basic
+	private String userName;
+//	@Transient		// hibernate will consider as not part of table(ignored)
+	@Temporal(TemporalType.DATE)  //saves only date
+	private Date joinedDate;
+//	private static Date joinedDate;   // hibernate will consider as not part of table
+	private String Address;
+	@Lob 	//this is a large object clob(character) or blob(byte) more than 255 in size
+	private String description;
+	
+	public int getUserId() {
+		return userId;
+	}
+	public void setUserId(int userId) {
+		this.userId = userId;
+	}
+	@Column (name="USER_NAME")
+	public String getUserName() {
+		return userName;
+	}
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+}
+</textarea>
+<h4>Retriving Objects Using session.get </h4>
+	session=sessionfactory.openSession();
+	session.beginTransaction();
+	user = (userdetails)session.get(userdetails.class, 1);
+	System.out.println(user.getUserName());
+	
+<h3>Primary keys</h3>
+	Natural key (with business purpose like emailid)
+		we should provide value 
+	surrogate key ( with no business purpose SlNo)
+		hibernate can takecare of it (last value +1)
+		
+<b>what if entity class contains arrays/objects/sets</b>
+	obects 2 types Entity and value onbject
+<h4>value object</h4>
+	If primary key is an object use @EmbeddedId annotation
+<textarea rows="20" cols="95">
+@Embeddable
+public class Address {
+	private String Street;
+	private String city;
+	private String state;
+	private String pincode;
+}
+
+@Entity(name="USER_DETAILS")
+@Table (name="USERDETAILS")
+public class userdetails {
+	@Id @GeneratedValue(strategy=GenerationType.AUTO) //->genrated value will generate integer value and 
+	@Column(name="USER_ID")
+	private int userId;
+	@Basic
+	private String userName;
+	@Temporal(TemporalType.DATE)  //saves only date
+	private Date joinedDate;
+	@Embedded
+	@AttributeOverrides({
+	@AttributeOverride(name="street",column=@Column(name="Home_STREET")),
+	@AttributeOverride(name="city",column=@Column(name="Home_CITY")),
+	@AttributeOverride(name="state",column=@Column(name="Home_STATE")),
+	@AttributeOverride(name="pincode",column=@Column(name="Home_PINCODE")),
+	})
+	private Address address;
+	@Lob 	//this is a large object clob(character) or blob(byte) more than 255 in size
+	private String description;
+}		
+	
+public class HibernateTest {
+  public static void main(String[] args) {
+	userdetails user= new userdetails();
+	Address addr= new Address();
+	addr.setStreet("2250 marsh ln");
+	addr.setCity("Carrollton");
+	addr.setState("TX");
+	addr.setPincode("75006");
+	user.setUserId(1);
+	user.setUserName("First User");
+	user.setAddress(addr);
+	user.setJoinedDate(new Date());
+	user.setDescription("description");
+  }
+}</textarea>	
+<i>	If number of addresses are not fixed then hibernate helps
+	in creating different table for addresses
+	use set datatype</i>
+<textarea rows="12" cols="95">
+@Entity(name="USER_DETAILS")
+@Table (name="USERDETAILS")
+public class userdetails {
+	@Id @GeneratedValue(strategy=GenerationType.AUTO) //->genrated value will generate integer value and 
+	@Column(name="USER_ID")
+	private int userId; 
+	@Column (name="USER_NAME")
+	private String userName;
+	@ElementCollection
+	@JoinTable(name="USER_ADDRESS", joinColumns=@JoinColumn(name="USER_ID"))
+	private Set<Address> address = new HashSet<Address>();
+}</textarea>	
+	<i>Set Doesn't support Indexing, So use Array list</i>
+	@GenericGenerator(name="sequence-gen",strategy="sequence")
+	@CollectionId(columns = { @Column(name="ADDRESS_ID") }, generator = "sequence-gen", type = @Type(type="long") )
+	private Collection(Address) address = new ArrayList(Address)();
+<h3>Proxy Objects</h3>
+<b>Lazy Intialization (default)</b>
+	When an object is pulled the  main table data is fecthed,\
+	when you run getter method of any list/set hibernate runs query to get those details
+	Ex: user.getAddress();
+	hibernate uses proxy class when fetching object date 
+	prooxy calss is sub class of actual class
+	@ElementCollection(fetch=FetchType.LAZY)
+	con: if session is closed can't get date from proxy class 
+<b>Eager Intialization</b>
+	@ElementCollection(fetch=FetchType.EAGER)
+	it collects data at a time when query is executed
+	con: if size of object is more the effects performance
+	pros: can get data after session is closed
+<h4>Entity Object</h4>
+<b>one to one mapping</b>
+public class userdetails {
+	@Id @GeneratedValue(strategy=GenerationType.AUTO) //->genrated value will generate integer value and 
+	@Column(name="USER_ID")
+	private int userId; 
+	@Column (name="USER_NAME")
+	private String userName;
+	<i>@OneToOne(targetEntity=Vehicle.class)</i>
+	private Vehicle vehicle;	
+}
+public class HibernateTest {
+	public static void main(String[] args) {
+		userdetails user= new userdetails();
+		user.setUserId(1);
+		user.setUserName("First User");
+		Vehicle vehicle= new Vehicle();
+		vehicle.setVehicleName("car");
+		user.setVehicle(vehicle);
+		SessionFactory sessionfactory = new Configuration().configure().buildSessionFactory();
+		Session session=sessionfactory.openSession();
+		session.beginTransaction();
+		session.save(vehicle);
+		session.save(user);
+		session.getTransaction().commit();
+		session.close();
+	}
+}
+<b>one to many</b>
+	<i>@OneToMany(targetEntity=Vehicle.class)
+	@JoinTable(name="USER_VEHICLE",joinColumns=@JoinColumn(name="User_ID"),inverseJoinColumns=@JoinColumn(name="Vehicle_ID"))</i>
+	
+<b>many to one</b>
+	<i>@ManyToOne(mappedBy="user")</i>
+	We can use both on two classes to make two way refering
+
+<b>many to many</b>
+	@ManyToMany(mappedBy="user")
+
+<b>Casses</b>
+	@NotFound(action=NotFoundAction.IGNORE)  -> if value initially not set 
+	Bag semantic=List/Arraylist
+	Bag semantic with id=
+	ListSemantic=List/ArrayList
+	Set semantic=set
+	Map semantic=map
+	
+	cascade 
+	@OneToMany(cascade=CascadeType.PERSIST)
+		DETACH
+		MERGE
+		REFRESH
+		REMOVE      //delete
+		ALL
+<h3>Implementing Inheritance</h3>
+1)	Single Table 
+	If an Entity class is inherited by different Entity classes
+	then by default only one table is formed which contains all the child class rows and a Dtype
+	Dtype is a column which contains all class names respective to its data
+
+	@Entity
+	@Inheritance(strategy=InheritanceType.SINGLE_TABLE)
+	@DiscriminatorColumn(name="VEHICLE_TYPE",discriminatorType=DiscriminatorType.STRING)
+	Vehicle class
+	
+	@DiscriminatorValue("bike")
+	child classes
+	
+2)	Table per class
+	To create different table for each class 
+	@Inheritance(strategy=InheritanceType.TABLE_PER_CLASS)
+
+3)	Joined
+	It will create table for each class but common columns stays with parent table
+	@Inheritance(strategy=InheritanceType.JOINED)
+
+<h3>CRUD Operations</h3>
+C Create
+	session.save(user);
+R Read	
+	session.get(userdetails.class,pimarykeyvalue);
+	userdetails user= (userdetails)session.get(userdetails.class,5);
+U Update 
+	userdetails updateuser=(userdetails)session.get(userdetails.class,5);
+	updateuser.setUserName("user4 update");
+	session.update(updateuser);
+D Delete
+	userdetails user= (userdetails)session.get(userdetails.class,5);
+	session.delete(user);
+<b>Transient Object</b>
+	user object is transient before session.save(user)
+<b>persistent object</b>
+	user object is transient after session.save(user)
+	now any changes to user object after sesion.save(user)
+	also tracked and fired as update statement
+<b>Detached Object</b>
+	user object is detached object after session.close()
+	changes to user will not be tracked  
+	
+To persist the detached object opensession again and session.update	
+To avoid unchanged update use @org.hibernate.Annotations.Entity(SelectBeforeUpdate=true) in entity class
+
+<h3>HQL Queries</h3>
+example
+session.beginTransaction();
+Query query = session.createQuery("from userdetails where USER_ID>1"); //use class name  n varable name instead of table name n column name
+List(userdetails) users =(List(userdetails)) query.list();	// list of objects r generated instead of record/result set
+session.getTransaction().commit();
+session.close();
+//System.out.println("Size of list result = "+users.size());
+for (userdetails u :users)
+{
+	System.out.println(u.getUserName());
+}
+<b>Pagenation</b>
+organising number of objects to show up in one page.
+Example:
+session.beginTransaction();
+Query query = session.createQuery("from userdetails where USER_ID>1");
+<i>query.setFirstResult(5);  //start from row number 5
+query.setMaxResults(4);	//pulls only 4 results</i>
+List<userdetails> users =(List<userdetails>) query.list();
+session.getTransaction().commit();
+session.close();
+
+Example
+
+</pre>	
+	
+
+</body>
+</html>

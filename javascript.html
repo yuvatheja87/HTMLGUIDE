@@ -1,0 +1,267 @@
+<html>
+<head>
+	<title>JavaScript</title>
+	<link rel="stylesheet" type="text/css" href="styles.css" />
+	<script type="text/javascript" src="myscript.js"></script>
+</head>
+<body>
+<center><h1>JAVA SCRIPT</h1></center>
+<div id="tabhead">
+	<ul id="tabs" style="list-style-type:none">
+		<li><a href="index.html">HOME</a></li>
+		<li><a href="java.html">JAVA</a></li>
+		<li><a href="python.html">PYTHON*</a></li>
+		<li><a href="qa.html">QA</a></li>
+		<li><a href="ui.html">UI</a></li>
+		<li><a href="linux.html">LINUX ESSENTIALS</a></li>
+		<li><a href="devops.html">DEVOPS</a></li>
+		<li><a href="aws.html">AWS</a></li>
+	</ul>
+</div>
+<div id="tabhead">
+	<ul id="tabs" style="list-style-type:none">
+		<li><a href="index.html">HOME</a></li>
+		<li><a href="hibernate.html">HIBERNATE</a></li>
+		<li><a href="sql.html">SQL</a></li>
+		<li><a href="html.html">HTML</a></li>
+		<li><a href="css.html">CSS</a></li>
+		<li><a href="javascript.html">JavaScript</a></li>
+	</ul>
+</div>
+<h3>Intro</h3>
+<textarea rows="10" cols="100">
+how to write js inside html
+
+<script type="text/javascript">
+	document.write("hey hello");
+</script>
+how to write code to skip js in old browsers
+
+<script type="text/javascript">
+<!--
+	document.write("hey hello");
+//-->	
+</script>
+</textarea>
+<h3>Comments and Variables</h3>
+<textarea rows="15" cols="100">
+<script type="text/javascript">
+// write a comment here <- single line 
+/* 
+this is a comment
+of multi line*/
+	Global and local variables 
+	var x = 23;   <- case sensitive, start with letter or _, contains numbers and symbols
+	document.write(x);
+	var tuna= -20.45;   <- any number
+	var y="text in here";   <- strings
+	var y = "text in \"here\"";
+	var z= true;   <- boolean
+	z= false;
+	var bucky = null;
+	document.write(tuna + y + " hello");	
+</script>
+</textarea>
+<h3>Functions</h3>
+<textarea rows="20" cols="100">
+<form>
+<input type="button" value="touch me" onclick="func('hello','world')"/>  <- calling function
+</form>
+<script type="text/javascript"> 
+function func(x,y){              
+	alert("ouch! "+ x +" welcome "+y);
+	documnet.write("ouch! "+ x +" welcome "+y+" <br/>");   <- any html tag will work inside doccument.write
+}
+</script>
+<script type="text/javascript"> 
+function funcy(x,y){              
+	dofirst();
+	alert("ouch! "+ x +" welcome "+y);
+	documnet.write("ouch! "+ x +" welcome "+y+" <br/>");   <- any html tag will work inside doccument.write
+	var c=x+y;
+	c++;	<- increment/ decrement
+	c+=20;   
+	return c;
+}
+function dofirst(){
+	document.write("i am the first");
+}
+	document.write(funcy(3,4));
+</script>
+</textarea>
+<h3>Event Handlers</h3>
+<textarea rows="17" cols="100">
+<b>onClick</b>
+<form>
+<input type="button" value="touch me" onC  lick="func('hello','world');alert('hello');"/>  <- calling function
+</form>
+<b>onMouseOver</b>
+<a href="http://google.com" onMouseOver="alert('game time');" >Hover over me</a>
+<b>onMouseOut</b>
+<a href="http://google.com" onMouseOut="alert('come back');" >Hover over me</a>
+<b>onLoad</b>
+works only on body tag
+<body onLoad="alert('your website is loaded');"> </body>
+<b>onUnload</b>
+<body onUnload="alert('gooh bye!!!');"> </body>
+
+</textarea>
+<h3>Object Oriented Programming</h3>
+<pre>var tuna ="i am fish";
+document.write(tuna.length);
+object.propeties
+object.methods<pre>
+<textarea rows="15" cols="100" >
+<head>
+<script type="text/javascript"> 
+	function person(name,age){
+		this.name=name;
+		this.age=age;
+	}
+	var bucky = new person("bucky",24);
+	var taylor = new person("taylor",22); 
+	
+</script>
+</head>
+<body>
+<script type="text/javascript"> 
+	documenr.write(taylor.name+"'s age is "+taylor.age)
+</script>
+</body>
+</textarea> 
+<textarea rows="15" cols="100" >
+<head>
+<script type="text/javascript"> 
+	bucky = {name:"bucky", age:24};     <-Object Initializers
+	taylor = {name:"taylor", age: 22};
+</script>
+</head>
+<body>
+<script type="text/javascript"> 
+	documenr.write(taylor.name+"'s age is "+taylor.age)
+</script>
+</body>
+</textarea> 
+<b>Methods</b>
+<textarea rows="20" cols="100" >
+<head>
+<script type="text/javascript"> 
+	function person(name,age){
+		this.name = name;
+		this.age = age;
+		this.years = yearsleft;	<- donot add paranthesis
+	}
+	function yearsleft(){
+		var numyears = 65-this.age;
+		return numyears;
+	}
+	var taylor = new person("taylor",22); 
+</script>
+</head>
+<body>
+<script type="text/javascript"> 
+	document.write(taylor.name+"'s age is "+taylor.age+" retires in "+taylor.years());
+</script>
+</body>
+</textarea> 
+<h3>Arrays</h3>
+<textarea rows="30" cols="100" >
+<body>
+<script type="text/javascript"> 
+	var people = new Array('yuva','theja','bucky');
+	document.write(people[2]);
+	
+	var people = new Array(3);
+	people[0]="yuva";
+	people[1]="theja";
+	people.[2]="bucky";
+	
+	var people = new Array();    <- unlimited size
+	people[0]="yuva";
+	people[1]="theja";
+	people[2]="bucky";
+	
+	document.write(people.length);
+	var dudes = new Array("lisa","erin","hannah");
+	var peep = people.concat(dudes);
+	
+	document.write(peep[5]);
+join and pop	
+	var people = new Array('yuva','theja','bucky');
+	var str1= people.join();    <- seperated by commma and string is store
+	var str1= people.join("-");  <- seperated by -
+	document.write(people.pop());  <-  removes last element of array
+reverse,push,sort
+	people.reverse();
+	people.push("simha");
+	people.sort();
+	
+	var crap = new Array(3);
+	for(i=0;i<3;i++){
+		crap[i]=prompt("add your name","");
+	}
+	for(i=0;i<crap.length;i++){
+		document.write(crap[i]+"<br/>" );
+	}
+Associative arrays
+	var bucky = new Array();
+	bucky["color"]="blue";
+	bucky["food"]="biriyani";
+	doccument.write(bucky["food"]);
+</script>
+</body>
+</textarea>
+<h3> Prompt box</h3>
+var pie = prompt("enter your name: ","eg:yuva");   <-- pop up to get user data
+document.write(pie);
+
+<h3> Math Objects</h3>
+document.write(Math.PI);
+document.write(Math.E);Euler's constant
+document.write(Math.sqrt(512);
+
+<h3>Date Objects</h3>
+function dosomething(){
+	document.write(Math.PI);
+}
+setInterval("dosomething",1000); refreshes the function for set interval
+function Timeprint(){
+	var now = new Date();
+	var hours = now.getHours();
+	var minutes = now.getMinutes();
+	var secs = now.getSeconds();
+	document.write(hours+"  "+ minutes+"  "+seconds);
+}
+setInterval("Timeprint()",1000);
+
+<h3>Accessing Forms</h4>
+<textarea rows="20" cols="100">
+<head>
+	function validator(){
+		if(document.tejaForm.thebox.checked)
+			alert("yes, it is checked");
+		else
+			alert("no, it is not checked");
+	}
+</head>
+<body>
+<form name="tejaForm">
+username:<input type="text" name="username" />
+password: <input type="password" name="password"/>
+<input type="checkbox" name="thebox"/>
+<input type="submit" value="submit" onClick="validator()"/>
+</form>
+<script type="text/javascript">
+	forms are saved in form array in javascript
+	length of form is number of elements inside form
+	var x = document.forms[0].length;
+	var y = document.forms[0].elements[0].name;
+	document.write(x+" "+y);   <--3 username
+	var x = document.tejaForm.username;  <- we can use name attribute to find forms and elements
+</script>
+</body>
+</textarea>
+
+
+</body>
+</html>

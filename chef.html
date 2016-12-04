@@ -1,0 +1,897 @@
+<html>
+<head>
+	<title>CHEF</title>
+	<link rel="stylesheet" type="text/css" href="styles.css" />
+	<script src="myscripts.js"></script>
+</head>
+<body>
+<center><h1>CHEF</h1></center>
+<div id="tabhead">
+	<ul id="tabs" style="list-style-type:none">
+		<li><a href="index.html">HOME</a></li>
+		<li><a href="java.html">JAVA</a></li>
+		<li><a href="python.html">PYTHON*</a></li>
+		<li><a href="qa.html">QA</a></li>
+		<li><a href="ui.html">UI</a></li>
+		<li><a href="linux.html">LINUX ESSENTIALS</a></li>
+		<li><a href="devops.html">DEVOPS</a></li>
+		<li><a href="aws.html">AWS</a></li>
+	</ul>
+</div>
+<div id="tabhead">
+	<ul id="tabs" style="list-style-type:none">
+		<li><a href="index.html">HOME</a></li>
+		<li><a href="linux.html">LINUX ESSENTIALS</a></li>
+		<li><a href="git.html">GIT(HUB)</a></li>
+		<li><a href="ant.html">ANT</a></li>
+		<li><a href="maven.html">MAVEN</a></li>
+		<li><a href="vagrant.html">VAGRANT</a></li>
+		<li><a href="chef.html">CHEF</a></li>
+		<li><a href="puppet.html">PUPPET</a></li>
+		<li><a href="jenkins.html">JENKINS</a></li>
+		<li><a href="docker.html">DOCKER</a></li>
+	</ul>
+</div>
+Recipies are created using Ruby
+<ul><li>Packages to be installed</li><li>files to be created</li>
+<li>Directories to be created</li><li>Services to be started</li>
+<li>config files to be updated</li><li>commands to be executed</li>
+</ul>
+<pre>
+	chef relies on either opensource chef server or chef enterprise
+	nodes download required configuration and execute when performing convergence
+	
+	workstation---->chef Server<------{webserver,cisco Router, Vanish Server, Database Server}nodes
+	<a href="https://docs.chef.io/resource_examples.html" target="_blank">Examples Link</a>
+	<a href="https://postmarkapp.com/blog/using-chef-on-windows-is-easier-than-you-think" target="_blank">Windows Examples Link</a>
+<h3>Common Chef Terminology</h3>
+	Recipies
+	Cookbook
+	chef-client
+	Comvergence
+	Configuration Drift
+	Resources
+	Provider
+	Attributes
+	Data-bags <-global variables as Json data
+	workstation 
+	Chef Server
+	Knife</div>
+	Client.rb <-configuration file for chef-client at /etc/chef/client.rb
+	Ohai <-tool used to detect attributes on a node
+	Node Object <- consists of run-list 
+	Chef-repo <-should be sync with version control systems ans stores cookbooks and roles etc
+	Organization
+	Environments
+	Idempotence
+<b>Chef Server</b>
+	OpenSource Chef-server
+	Chef-server enterprise(hosted)
+	chef-server enterprise(on-premise)
+<b>Chef Workstation</b>
+	developing cookbooks and recipies
+	sync chef repo with git/svn(source control)
+	using Knife to upload and manage nodeand chef server configuration
+	each organisation has its starterkit(pem keys)
+	knife.rd config file is located in chef-repo 
+	during bootstrap organizatio.pem is copied to node as validation.pem
+	for security after first convergence client.pem key is generated to node 
+	then delete validation.pem 
+	file "/etc/chef/validation.pem" do
+		action :delete
+	end
+	to delete validation.pem write this recipe
+	<b>Knife</b>
+	Creating cookboos
+	uploading cookbooks to chef server
+	managing roles and run_lists
+	searching chef-server node object data
+	Bootstrapping nodes
+	<b>Install chef</b> 
+	to install on OSX and linux
+		curl -L https://www.opscode.com/chef/install.sh | sudo bash
+	download and install chef manually for windows
+		http://www.getchef.com/chef/install/
+	when knife is used to bootstrap a node it installs
+	knife
+	Ohai
+	Ruby
+	Chef-client
+	a few other additional items
+	to bootstrap
+	<b>knife bootstrap (ipaddress) -x username -P password -N nodename</b>
+	usually -N nodename to be created on its own, so don't used
+	ipaddress-use public hostname it will not change but public ip changes
+<b>chef-repo</b>	
+	any configs and cookbooks created or changed stays locally till it is uploaded to chef server
+	to be sync with team members, use any source controll(git/svn/mercurial) management to push chef-repo to source controll and others will download it
+	<b>resources</b>
+		package <- manage packages that need to be installed
+		Template <- manage contente of ruby template in the cookbook
+		Services <-manage system services like starting stopping current state service 
+<h3>Setup</h3>
+	login to chef site in browser and download Staterkit
+	use public hostname instead of public ip
+	<b>On Node</b>
+	login as root user
+	cd /etc/ssh
+	vi sshd_config 
+	uncomment permitrootLogin Yes
+	save and exit
+	service sshd restart
+	<b>On Workstation</b>
+	login as root
+	copy the sartup kit to the workstation(to workon) on root using filezilla, winscp etc
+	mv chef-starterkit.zip ~/
+	unzip chef-starterkit.zip
+	curl -L https://www.opscode.com/chef/install.sh | sudo bash
+	<b>bootstrap node</b>
+	knife bootstrap (publichostname/internalip) -x root -P password 
+	enable advance login
+	cd /etc/chef/
+	vi client.rd
+	add below line
+	log_level	info      <- for discription on command line 
+	save and exit
+<h3>Starting The Apache Recipe</h3>	
+	on workstation
+	knife cookbook create (apache/name of cookbook) <-it creates apache directory inside cookbook directory
+	cd cookbooks/apache/recipes
+	vi default.rb
+	package "httpd" do
+		action :install <- installs apache 
+	end
+	service "httpd" do
+		action [enable, :start] <-enables and start apache service
+	end
+	knife cookbook upload apache
+	knife node run_list add (nodename) "receipe[apache]"
+	
+	knife cookbook create security
+	cd cookbooks/security/recipe 
+	vi default.rb
+	file "etc/chef/validation.pem" do
+		action :delete
+	end
+	knife cookbook upload security 
+	knife node run_list add nodename -b "recipe[apache]" "recipe[securty]" <-b for before
+<h3>Attributes, recipe and Template</h3>	
+	cd cookbooks/apache
+	cd attributes/
+	vi default.rb
+	default["apache"]["sites"]["sitename1"]={"port" => 80,"domain"=>"sitename1.mylabserver.com} 
+	default["apache"]["sites"]["sitename1b"]={"port" => 80,"domain"=>"sitename1b.mylabserver.com}
+	save and exit
+	cd..
+	cd recipe
+	vim default.rb
+	package "httpd" do
+		action :install <- installs apache 
+	end
+	<i>node["apache"["sites"].each do |sitename, data|
+		document_root = "/content/sites/#{sitename}"
+		directory document_root do
+			mod "0755"
+			recursive true
+		end
+	template "etc/httpd/conf.d/#{sitename}.config" do
+		source "vhost.erb" 
+		mod "0644"
+		variables(
+			:document_root =>document_root,
+			:port => data["port"],
+			:domain => data["domain"]
+		)
+		notifies :restart, "service[httpd]"
+	end </i>	
+	end
+	service "httpd" do
+		action [enable, :start] <-enables and start apache service
+	end
+	save and upload this cookbook
+	<b>template</b>
+	cd templates/default
+	vim vhost.erb
+	<textarea rows="15" cols="100" >
+	<% if @port ==80 -%>
+		NameVirtualHost *:80
+	<% end -%>	
+	<virtualhost *:<%= @port %> >
+		ServerName <%= @domain %>
+		Document_root <%= @document_root %>
+		<Directory />
+		Options FollowSymLinks
+		AllowOverride None
+		</Directory>
+		<Directory <%= @document_root %>>
+		  Options Indexes FollowSymLinks Multiviews
+		  AllowOverride noneOrder allow,deny
+		  allow from all 
+		</Directory>
+	</virtualhost></textarea>
+	save and upload and convergence
+<h3>attribute precedence</h3>
+	attribute <-details about node
+	attribute can be defined by
+	  ohai
+	  cookbooks
+	  roles
+	  environments
+	if 2 attributes have same name then precedence comes into picture
+	default <-lowest level 
+	fource_default <-used from cook book or recipe
+	normal <- presists in the node
+	override <-shouldbe used only when required
+	force_override <-from cookbook or recipe
+	Automatic <-always have the highest priority
+<h3> Adding HTML Templates Dynamically</h3>
+	cd cookbook/apache/attribute
+	vi default.rb
+	default["apache"]["sites"]["sitename1"]={"site_title" => "sitename1 website is comming soon", "port" => 80,"domain"=>"sitename1.mylabserver.com} 
+	default["apache"]["sites"]["sitename1b"]={"site_title" => "sitename1b website is comming soon", "port" => 80,"domain"=>"sitename1b.mylabserver.com}
+	save and exit
+	<b>cd recipe</b>
+	vim default.rb
+	package "httpd" do
+		action :install <- installs apache 
+	end
+	node["apache"["sites"].each do |sitename, data|
+		document_root = "/content/sites/#{sitename}"
+		directory document_root do
+			mod "0755"
+			recursive true
+		end
+	template "etc/httpd/conf.d/#{sitename}.config" do
+		source "vhost.erb" 
+		mod "0644"
+		variables(
+			:document_root =>document_root,
+			:port => data["port"],
+			:domain => data["domain"]
+		)
+		notifies :restart, "service[httpd]"
+	end 
+	<i>template "/content/sites/#{sitename}/index.html" do
+		source "index.html.erb"
+		mode "0644"
+		variables(
+			:site_title =>data["site_title"],
+			:commingsoon => "commingsoon"
+		)
+	end</i>
+	end
+	service "httpd" do
+		action [enable, :start] <-enables and start apache service
+	end
+	save and upload this cookbook
+	<b>cd templates/default</b>
+	vim index.html.erb
+	<textarea rows="10" cols="100" >
+	<html>
+	<head>
+	<title><%= @site_title %> </title>
+	</head>
+	<body>
+	<h1><%= @site_title %> </h1>
+	<h2><%= @commingsoon %></h2>
+	</body>
+	</html>
+	</textarea>
+	save and upload and convergence
+<h3>Recipe includes and Dependencies</h3>
+	knife cookbook create php
+	cd cookbook/php/recipe
+	vim default.rb
+	package "php" do
+		action :install
+	end
+	save and upload to server
+	<b>cd cookbook/apache</b>
+	vim metadata.rb
+	depends "php"
+	save and exit
+	<b>cd cookbook/apache/recipe</b>
+	vim default.rb
+	package "httpd" do
+		action :install <- installs apache 
+	end
+	node["apache"["sites"].each do |sitename, data|
+		document_root = "/content/sites/#{sitename}"
+		directory document_root do
+			mod "0755"
+			recursive true
+		end
+	template "etc/httpd/conf.d/#{sitename}.config" do
+		source "vhost.erb" 
+		mod "0644"
+		variables(
+			:document_root =>document_root,
+			:port => data["port"],
+			:domain => data["domain"]
+		)
+		notifies :restart, "service[httpd]"
+	end 
+	template "/content/sites/#{sitename}/index.html" do
+		source "index.html.erb"
+		mode "0644"
+		variables(
+			:site_title =>data["site_title"],
+			:commingsoon => "commingsoon"
+		)
+	end
+	end
+	service "httpd" do
+		action [enable, :start] <-enables and start apache service
+	end
+	<i>include_recipe "php::default"</i>
+	save and upload and convergence
+<h3>Copying Config files to the node</h3>	
+	download and copy php.ini from browser to cookbook/php/files/default
+	vim php.ini
+	::php.ini is managed by php cookbook
+	save and exit
+	<b>cd cookbook/php/recipes</b>
+	vim default.rb
+	package "php" do
+		action :install
+	end
+	<i>cookbook_file "/etc/php.ini" do
+		source "php.ini"
+		mode "0644"
+	end</i>
+	save and upload
+<b>executing Linux commands on the node</b>	
+	cd/chef-repo/cookbook/apache/recipes
+	vim default.rb
+	package "httpd" do
+		action :install <- installs apache 
+	end
+	node["apache"["sites"].each do |sitename, data|
+		document_root = "/content/sites/#{sitename}"
+		directory document_root do
+			mod "0755"
+			recursive true
+		end
+	template "etc/httpd/conf.d/#{sitename}.config" do
+		source "vhost.erb" 
+		mod "0644"
+		variables(
+			:document_root =>document_root,
+			:port => data["port"],
+			:domain => data["domain"]
+		)
+		notifies :restart, "service[httpd]"
+	end 
+	template "/content/sites/#{sitename}/index.html" do
+		source "index.html.erb"
+		mode "0644"
+		variables(
+			:site_title =>data["site_title"],
+			:commingsoon => "commingsoon"
+		)
+	end
+	end
+	<i>execute "rm /etc/httpd/conf.d/wecome.conf" do
+		only_if do
+			File.exist?("/etc/httpd/conf.d/wecome.conf")
+		end
+		notifies :restart, "service[httpd]"
+	end</i>
+	service "httpd" do
+		action [enable, :start] <-enables and start apache service
+	end
+	include_recipe "php::default"
+	save and upload and convergence
+<h3>Adding Platform support To the cookbook</h3>
+	if we are using ubuntu
+	on ubuntu machine
+	su -
+	cd /etc/ssh
+	vim sshd.config
+	change permitrootlogin to yes
+	save and exit
+	service ssh restart
+	<b>on Workstation</b>
+	knife bootstrap ubuntuhostname -x root -P password
+	knife node run_list add ubuntuhost "recipe[apache]"
+	knife node run_list add ubuntuhost -b "recipe[apache]" "recipe[security]"
+	<b>attribute</b>
+	cd cookbook/apache/attribute
+	vi default.rb
+	default["apache"]["sites"]["sitename1"]={"site_title" => "sitename1 website is comming soon", "port" => 80,"domain"=>"sitename1.mylabserver.com} 
+	default["apache"]["sites"]["sitename1b"]={"site_title" => "sitename1b website is comming soon", "port" => 80,"domain"=>"sitename1b.mylabserver.com}
+	<i>default["apache"]["sites"]["sitename2"]={"site_title" => "sitename2 website is comming soon", "port" => 80,"domain"=>"sitename1.mylabserver.com}
+	case node["platform"]
+	when "centos"
+		default["apache"]["package"] = "httpd"
+	when "ubuntu"
+		default["apache"]["package"]= "apache2"
+	end</i>
+	save and exit
+	<b>recipe</b>
+	<i>if node["platform"]=="ubuntu"
+		execute "apt-get update -y" do
+		end
+	end </i>
+	package "apache2" do
+		<i>package_name node["apache"]["package"]</i>
+		action :install <- installs apache 
+	end
+	node["apache"["sites"].each do |sitename, data|
+		document_root = "/content/sites/#{sitename}"
+		directory document_root do
+			mod "0755"
+			recursive true
+		end
+	<i>if node["platform"]=="ubuntu"
+		template_location = "/etc/apache2/sites-enabled/#{sitename}.conf"
+	elsif node["platform"]=="centos"
+		template_location = "etc/httpd/conf.d/#{sitename}.conf"
+	end </i>
+	template template_location do
+		source "vhost.erb" 
+		mod "0644"
+		variables(
+			:document_root =>document_root,
+			:port => data["port"],
+			:domain => data["domain"]
+		)
+		notifies :restart, "service[httpd]"
+	end 
+	template "/content/sites/#{sitename}/index.html" do
+		source "index.html.erb"
+		mode "0644"
+		variables(
+			:site_title =>data["site_title"],
+			:commingsoon => "commingsoon"
+		)
+	end
+	end
+	execute "rm /etc/httpd/conf.d/wecome.conf" do
+		only_if do
+			File.exist?("/etc/httpd/conf.d/wecome.conf")
+		end
+		notifies :restart, "service[httpd]"
+	end
+	service "httpd" do
+		<i>service_name node["apache"]["package"]</i>
+		action [enable, :start] <-enables and start apache service
+	end
+	#include_recipe "php::default"
+	save and upload and convergence
+<b>Adding the Local Chef-repo to github</b>
+	open git account /create repository
+	git init <-inside chefrepo
+	git add .
+	git commit -m "chef ropo for the first time"
+	git remote  add origin githubhttpslink
+	git push -u origin master
+<h3>Node Object and Search</h3>
+	<b>Node Object</b>
+	data about the node is collected by ohai
+	previous node object is backed up by chef-client run
+	current node object is uploaded to chef server
+	we can search the node attributes
+	on chef node 
+	ohai
+	gives all the info locally 
+	<b>search Concepts</b>
+	we can search for 
+	Data bags <- json object
+	environments
+	roles
+	nodes
+	<b>search with knife</b>
+	sysntax:knife search node "Key:pattern" -a (a attributes)
+	"ipaddress:192.168.*" <-key:pattern examples
+	"ipaddress:[192.168.* TO 192.172.*]"
+	can search recipe writting ruby recipe 
+	Knife node show ubuntunode -a  apache <- shows all apache attributes
+	knife node show ubuntunode -a apache.sites <-shows all inside apache site attributes
+	knife node show ubuntunode -a apache.sites.sitename1
+	knife node show ubuntunode -a memory <-to see all memory relate attributes
+	knife search node "os:linux" <-shows all nodes with linux
+	knife search node "os:linux" -a platform <- gives platform info of all lunux nodes
+	knife search node "platform:ubuntu"
+	knife search node "platform:ubuntu" -a memory.swap.free
+	knife search node "kernel_release:*" -a memory.swap.free <-to search nested we use _(underscore) instead .(period)
+	knife search node "os:linux AND platform:ubuntu" -a kernel
+<h3>Data bags</h3>
+	User to be added to a system
+	Admins to be added to sudo
+	API/Db Credentials
+	Much More
+	global variable that is stored in Jsondata accessible from the chef server
+	Databags are independent of cookbooks and recipes
+	<b>Creating User and Sudo group</b>
+	mkdir data_bags <-inside chef-repo
+	cd data_bags
+	mkdir {users,groups}
+	cd users
+	vim admin.json
+	{
+		"id":"admin",
+		"comment":"admin user",
+		"uid":2005,
+		"gid":0,
+		"home":"/home/admin",
+		"shell":"/bin/bash",
+		"password":"encrypted password"
+	}
+	save and exit
+	cd groups
+	vim sudoers.json
+	{
+		"id":"wheel",  
+		"gid":3005,
+		"members":["admin","user"] <- can give multiple users
+	}
+	save and exit
+	knife data bag create users
+	knife data bag create groups  <- creats data bag in chef server
+	knife data_bag from file users admin.json<- add databag to server
+	knife data_bag from file groups sudoers.json 
+	knife search users "id:admin" -a home <- to search databags
+<b>recipes to deal with databags</b>
+	first check users we provide are not in nodes
+	knife cookbook create localusers
+	recipe
+	vim default.rb
+	search(:users, "*:*").each do |data|
+		user data["id"] do
+			comment data["comment"]
+			uid data ["uid"]
+			gid data["gid"]
+			home data["home"]
+			shell data["shell"]
+		end
+	end
+	include_recipe "localusers::groups"  <- no need to add in metadata because they are in same cookbook
+	save and upload
+	knife run_list add linuxnode "recipe[localusers]"
+	do chef-client convergence
+	vim groups.rb
+	search(:groups, "*:*").each do |data|
+		group data["id"] do
+			gid data["gid"]
+			members data["members"]
+		end
+	end
+	save and upload knife cookbook upload localusers
+	do chef-client convergence
+<h3>Chef Environments</h3>	
+	Environments allow sharing of cookbooks within an organization(like production,development)
+	Environment level attributes
+	Environment info can be stored in json files or .rb files
+	2 types of attribute precedence default and override
+	all nodes defaultly assign to _default environment
+<b>Creating and configuring Environments</b>
+	mkdir environments
+	cd environments
+	vim dev.rb
+	name "dev"
+	description "this development environment"
+	cookbook "apache", "=0.1.5"
+	override_attributes({
+		"author"=> {
+			"name"=>"my new authorname"
+		}	
+	}
+	default["author"]["name"]="my authorname"
+	)
+	save and exit
+	knife environments list -w
+	knife environment from file dev.rb  <-updates dev environment
+	you can change a node environment in chef server manually
+	or can use knife plugin knifeflip
+	<b>on linuxnode</b>
+	go to cd /etc/chef
+	vim client.rb
+	environment "dev"
+	save and exit
+<b>create second version of cookbook</b>	
+	cd cookbooks/apache/attributes
+	vim default.rb
+	default["apache"]["sites"]["sitename1"]={"site_title" => "sitename1 website is comming soon", "port" => 80,"domain"=>"sitename1.mylabserver.com} 
+	default["apache"]["sites"]["sitename1b"]={"site_title" => "sitename1b website is comming soon", "port" => 80,"domain"=>"sitename1b.mylabserver.com}
+	default["apache"]["sites"]["sitename2"]={"site_title" => "sitename2 website is comming soon", "port" => 80,"domain"=>"sitename1.mylabserver.com}
+	<i>default["author"["name"]="ur authorname"</i>
+	case node["platform"]
+	when "centos"
+		default["apache"]["package"] = "httpd"
+	when "ubuntu"
+		default["apache"]["package"]= "apache2"
+	end
+	save and exit
+	cd cookbooks/apche/recipe
+	vim default.rb
+	if node["platform"]=="ubuntu"
+		execute "apt-get update -y" do
+		end
+	end 
+	package "apache2" do
+		package_name node["apache"]["package"]
+		action :install <- installs apache 
+	end
+	node["apache"["sites"].each do |sitename, data|
+		document_root = "/content/sites/#{sitename}"
+		directory document_root do
+			mod "0755"
+			recursive true
+		end
+	if node["platform"]=="ubuntu"
+		template_location = "/etc/apache2/sites-enabled/#{sitename}.conf"
+	elsif node["platform"]=="centos"
+		template_location = "etc/httpd/conf.d/#{sitename}.conf"
+	end 
+	template template_location do
+		source "vhost.erb" 
+		mod "0644"
+		variables(
+			:document_root =>document_root,
+			:port => data["port"],
+			:domain => data["domain"]
+		)
+		notifies :restart, "service[httpd]"
+	end 
+	template "/content/sites/#{sitename}/index.html" do
+		source "index.html.erb"
+		mode "0644"
+		variables(
+			:site_title =>data["site_title"],
+			:commingsoon => "commingsoon",
+			<i>:authore_name => node["author"]["name"]</i>
+		)
+	end
+	end
+	execute "rm /etc/httpd/conf.d/wecome.conf" do
+		only_if do
+			File.exist?("/etc/httpd/conf.d/wecome.conf")
+		end
+		notifies :restart, "service[httpd]"
+	end
+	service "httpd" do
+		service_name node["apache"]["package"]
+		action [enable, :start] <-enables and start apache service
+	end
+	#include_recipe "php::default"
+	save and exit
+	<b>cd cookboooks/apache/template</b>
+	vim index.thml.erb
+	<textarea rows="10" cols="100" >
+	<html>
+	<head>
+	<title><%= @site_title %> </title>
+	</head>
+	<body>
+	<h1><%= @site_title %> </h1>
+	<h2><%= @commingsoon %></h2>
+	<h4><%= @author_name %></h4>
+	</body>
+	</html>
+	</textarea>
+	save and exit
+	cd /cookbooks/apache
+	vim metadata.rb 
+	edit version '0.1.5'
+	save and exit 
+	now upload and convergence
+	<b>deploying to different envirnments</b>
+	cd chef-repo/environments
+	vim prod.rb
+	name "prod"
+	description "this production environment"
+	cookbook "apache", "=0.1.0"
+	default["author"]["name"]="my authorname"
+	)
+	save and exit
+	knife environments list -w
+	knife environment from file prod.rb
+	<b>on ubuntunode</b>
+	go to cd /etc/chef
+	vim client.rb
+	environment "prod"
+	save and exit
+	<b>Viewing and deleting environmentes</b>
+	knife environments list -w 
+	compare
+	knife environment compare dev prod <- gives the cookbook versions 
+	knife environments compare --all <- compare all cookbooks version in all environments
+	remove 
+	knife environment delete dev
+	details
+	knife environment show dev 
+<h3>Roles</h3>	
+	nodes are assigned to role and run_list is added to role
+	to avoid manually assigning recipes to nodes
+	knife role create rolename
+	chef-repo/roles/rolename.rb
+	knife role from file chef-repo/roles/rolename.rb
+	knife role list -w
+	knife role delete rolename 
+<b>Webserver</b>
+	mkdir roles
+	cd roles
+	vim webserver.rb
+	name "webserver"
+	description "apache webserver"
+	run_list "recipe[security]","recipe[apache]","recipe[localuser]"
+	save and exit
+	knife role from file webserver.rb
+	can add role in server console or
+	knife node run_list add linuxnode1"role[webserver]"
+<b>MySQl</b>
+	knife cookbook create mysql
+	cd cookbooks/mysql/recipe
+	vim default.rb
+	package "mysql-server" do
+	end
+	package "mysql" do
+	end
+	save and upload
+	cd cookbooks/roles
+	vim database.rb
+	name "database"
+	description "mysql servers"
+	run_list "recipe[security]","recipe[mysql]"
+	save and exit
+	knife role from file database.rb
+	knife node run_list add linuxnode2 "role[database]"
+<b>creating a base role</b>
+	cd chef-repo/roles
+	vim base.rb
+	name "baserole"
+	description "contains common runlist"
+	run_list "recipe[security]","recipe[localusers]"
+	save and upload
+	vim webserver.rb
+	name "webserver"
+	description "apache webserver"
+	<i>run_list "role[base]","recipe[apache]"</i>
+	save and upload
+<b>knife plugins</b>
+	knife-flip <-manage environment for nodes
+	cloud platforms <-azure,ec2,google.linode,openstack,rackspace
+	custom plugins
+<b>chef supermarket</b>
+	It contains prewritten recipes like lampstack, mysql, nginx
+	example chef-client cookbook
+<b>chef-client cookbook</b>	
+	on supermarket.chef.com search chef-client and click on it
+	check for dependencies and download them too, check if any dependency have dependencies
+	download all of them
+	extract cookbooks and copy them to chef-repo/cookbooks
+	now upload to chef server in order of dependency first
+	knife cookbook upload chef-handler
+	knife cookbook upload windows
+	knife cookbook upload logrotate
+	knife cookbook upload cron
+	knife cookbook upload chef-client
+	add all these cookbooks to base role 
+	vim base.rb
+	name "baserole"
+	description "contains common runlist"
+	run_list "recipe[chef-client::delete_validation]","recipe[chef-client::cron]","recipe[chef-client]","recipe[localusers]"
+	save and upload
+	chef-client::cron contains time interval to run chef-client command on nodes
+<h3>OpenSource Chef</h3>	
+	download opensourcechef file and install using rpm/dpkg -i
+	then run chef-server-ctl reconfigure
+	to verify run chef-server-ctl test
+	with public ip /public hostname goto web browser
+	login to GUI of chef server and login with default username/psw
+	then change password
+	it doesn't have starterkit 
+	in order to work we need to configure using client:chef-validator
+	and install knife
+<b>configuring workstation</b>
+	curl -L https://www.opscode.com/chef/install.sh | sudo bash
+	download chef-repo from github
+	yum install git
+	cd /root 
+	git clone https://github.com.opscode.chef-repo
+	knife configure 
+	/root/chef-repo/.chef/knife.rb
+	give server url 
+	give new user or user existing user
+	give chef-validator as name
+	/root/chef-repo/.chef/chef-validator.pem
+	/root/chef-repo
+	now on chefserver/clients
+	chefvalidator
+	click regenetrate key
+	cd /chef-repo/.chef
+	vi chef-validator.pem
+	paste private key
+	under users 
+	create a new user and give him admin previllages
+	now copy the private key and paste inside chef-repo/.chef
+	vi username.pem 
+	paste 
+	knife client list <-to check and see clients on server
+	knife bootstrap publichostname -x root -P password 
+	now create cookbooks and run them on nodes
+<h3>Examples</h3>
+<b>creating user, password</b>
+	how to create <a href="https://www.openssl.org/docs/manmaster/apps/enc.html" target="_blank">encrypted password string</a>
+	openssl passwd -1 -salt "yoursaltphrase"	<-to get string of encrypted key
+	Password: <enter the password>
+	$1$yoursalt$fIque2U6AZ.YRAqOu5Eyo/
+	#echo -n "aaaabbbbccccdddd" | openssl enc -e -aes-256-cbc -a -salt
+	#enter aes-256-cbc encryption password:
+	#Verifying - enter aes-256-cbc encryption password:
+	#openssl passwd -1 "theplaintextpassword"
+	
+	user 'mytestuser' do
+		comment :"Test User"
+		home :"/home/mytestuser"
+		shell :"/bin/bash"
+		supports :manage_home => true
+		password :'$1$yoursalt$fIque2U6AZ.YRAqOu5Eyo/'
+		action :create
+	end
+	
+<b>Windows</b>
+<a href="https://github.com/chef-cookbooks/windows" target="_blank">Windows Git Link</a>
+<a href="https://docs.chef.io/windows.html" target="_blank">cheif-windows</a>
+<a href="http://www.systemcentercentral.com/day-57-a-simple-recipe-and-cookbook-for-windows/" target="_blank">cheif-windows</a>
+<a href="https://github.com/sneal/chef_windows_tutorial" target="_blank">cheif-windows-gitlink</a>
+	#Windows installer
+	windows_package "Notepad++" do
+		source 'C:tmpnpp.6.5.3.Installer.exe' 
+		action :install 
+	end
+	
+	#windows Services
+	windows_feature "TelnetClient" do
+		action :install
+	end
+	%w{ IIS-WebServerRole IIS-WebServer }.each do |feature|
+		windows_feature feature do
+			action :install
+		end
+	end
+	
+#Creates a directory with proper permissions
+#http://docs.opscode.com/resource_directory.html
+directory 'C:MyDirectory' do
+  action :create
+  recursive true
+  rights :full_control, "Admin", :applies_to_children => true
+end
+
+#Restarts the MyService service
+#http://docs.opscode.com/resource_service.html
+service "MyService" do
+  action :restart
+end
+
+#Outputs contents of C drive
+#http://docs.opscode.com/resource_batch.html
+batch "Output directory list" do
+  code 'dir C:'
+  action :run
+end
+
+windows_package 'PuTTY version 0.60' do
+  source 'http://the.earth.li/~sgtatham/putty/latest/x86/putty-0.60-installer.exe'
+  installer_type :inno
+  action :install
+end
+
+#Install Firefox as custom installer and manually set the silent install flags
+windows_package 'Mozilla Firefox 5.0 (x86 en-US)' do
+  source 'http://archive.mozilla.org/pub/mozilla.org/mozilla.org/firefox/releases/5.0/win32/en-US/Firefox%20Setup%205.0.exe'
+  options '-ms'
+  installer_type :custom
+  action :install
+end
+
+#Make the local windows proxy match the one set for Chef
+proxy = URI.parse(Chef::Config[:http_proxy])
+windows_registry 'HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings' do
+  values 'ProxyEnable' => 1, 'ProxyServer' => "#{proxy.host}:#{proxy.port}", 'ProxyOverride' => '<local>'
+end
+</pre>
+</body>
+</html>

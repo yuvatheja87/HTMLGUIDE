@@ -1,0 +1,1628 @@
+<html>
+<head>
+	<title>PUPPET</title>
+	<link rel="stylesheet" type="text/css" href="styles.css" />
+	<script type="text/javascript" src="myscript.js"></script>
+</head>
+<body>
+<center><h1>PUPPET</h1></center>
+<div id="tabhead">
+	<ul id="tabs" style="list-style-type:none">
+		<li><a href="index.html">HOME</a></li>
+		<li><a href="java.html">JAVA</a></li>
+		<li><a href="python.html">PYTHON*</a></li>
+		<li><a href="qa.html">QA</a></li>
+		<li><a href="ui.html">UI</a></li>
+		<li><a href="linux.html">LINUX ESSENTIALS</a></li>
+		<li><a href="devops.html">DEVOPS</a></li>
+		<li><a href="aws.html">AWS</a></li>
+	</ul>
+</div>
+<div id="tabhead">
+	<ul id="tabs" style="list-style-type:none">
+		<li><a href="index.html">HOME</a></li>
+		<li><a href="linux.html">LINUX ESSENTIALS</a></li>
+		<li><a href="git.html">GIT(HUB)</a></li>
+		<li><a href="ant.html">ANT</a></li>
+		<li><a href="maven.html">MAVEN</a></li>
+		<li><a href="vagrant.html">VAGRANT</a></li>
+		<li><a href="chef.html">CHEF</a></li>
+		<li><a href="puppet.html">PUPPET</a></li>
+		<li><a href="jenkins.html">JENKINS</a></li>
+		<li><a href="docker.html">DOCKER</a></li>
+	</ul>
+</div>
+<h3 class="hh3" onclick="toggle_visibility('d8')">Installing</h3>
+<div id="d8"><b>master</b>
+<pre>	download puppet trail version gives you 10 free nodes to master
+	extract puppet tarball.
+	port 3000,8140,61613,443,5432 <- should be free
+	enable permit root login <- /etc/ssh/sshd.config
+	service sshd restart
+	hostname <-gives hostname of system 
+	cd /etc/ssh/
+	vim hosts
+	127.0.01  (hostname)	localhost.localdomain  localhost
+	::1			localhost6.localdomain6 localhost6
+	save and exit
+	/puppet-enterprise/
+	./puppet-enterprise-installer -a filename <- to create from existing answer filename
+	<- a flag read answers from file quit if error occurs,A flag read answer from file if error prompt on console to enter manually
+	./puppet-enterprise-installer <- creating first time
+	after setup it gives you url to go to puppet GUI interface
+	https://hostname:3000 <-hostname should be there, else config is missing
+	open browser and enter the url
+	confirm security exceptions
+	we have 2 types of deployment 
+	1.monolithic <-using 1 server and lessthan 500 nodes
+	2.Split <-using more than 3 different serversand 500-1500 nodes
+	 choose one
+	enter hostname 
+	enter root username and password
+	select install postgresql for me
+	under console admnistratoe user 
+	give email address and password
+	console mail server localhost
+	submit queiry
+	deploy now
+	now login with username and password
+	on CLI
+	service pe-httpd status <- gives status of apache puppet version
+	cd /var/log ls
+	we can see lot of puppet related services
+	pe-activemq <- used to send messages from mcollective to agent nodes
+	pe-mcollective <- orchastration service 
+	cd /etc
+	ls |grep puppet
+	cd puppetlabs/puppet <- where wewrite all modules, manifests,files
+	vi puppet.conf <- all config are avail like main,master,agent.
+	<b>answer file</b>
+	cd /opt/puppet/share/installer/answers/ <-to view answer file or use to install automatically
+<b>PuppetAgent</b>	
+	connect to root user
+	curl -k https://masterhostname:8140/packages/current/install.sh |bash <-to installing puppet
+	puppet agent -t <- to test master agent connection and 
+	on master
+	puppet cert list <- shows all nodes asking for sign
+	puppet cert sign nodehostname <- to sign individual nodes
+	puppet cert sign --all <- to sign all at once
+	puppet cert list -a <- all signed list
+	on node
+	puppet agent -t
+	puppet agent --server puppetmasterhostname <- to connect to different server
+	puppet agent <- it creates a deamon on background which run every 30 mins
+	cd /etc/puppetlabs/puppet/
+	vi puppet.conf <- agent config 
+	cd /var/log
+	tail -f messages <- loged messages</pre></div>
+<pre><b>Puppet.conf</b>
+	/etc/puppetlabs/puppet/puppet.config
+	<b>main</b> <-global setting used by alll sevices/servers, hidden by other section
+		vardir=/var/opt/lib/pe-puppet
+		logdir=/var/log/pe-puppet
+		rundir=/var/run/pe-puppet
+		basemodulepath = /etc/puppetlabs/puppet/modules:/opt/puppet/share/puppet/modules 
+		server = hostname 
+		user = pe-puppet
+		group = pe-puppet 
+	<b>master</b> <-use by puppet master and puppet cert command
+	
+	<b>agent</b> <- used by puppet agent sevice
+		<u>Basic</u>
+		ca_server <-certificate authority requests
+		Certname <- Certificate to use when communicating with server
+		Server <-Hostname of the puppet master
+		Environment <-defaults to production
+		<u>run behavior</u>
+		noop <-agent will not do any work only simulate changes and report to master
+		priority <-sets the <u>nice command</u> so catalog enforcment does not use up cpu
+		report <-Determines if reporting is enabled
+		usecacheonfailure <-Fall back to last known working catalog if convergence fails.
+		<u>fundamental</u>
+		runinterval <-puppet agent deamon runs
+		waitforcert <-keep trying to run puppet agent if the certificate is not initially available
+	<b>user</b> <-used most commonly puppet apply command
+	
+	any changes must require restart pe-puppet service
+	can reference variable any where as $vardir 
+	inside puppet folder
+	puppet config set (SETTING NAME) (VALUE) --section (CONFIG SECTION)
+	puppet config set report false --section agent 
+<b>Resource Abstraction Layer</b>
+	users,Cronjobs,packages installed,services 
+	issue:windows vs redhat vs ubuntu
+	sol: declare to start service rather than how to start services
+	resource type
+	note{commas,ensure,resourse type,title}
+	ex:
+	user{'username':
+		ensure => present,
+		uid =>'102',
+		gid => 'wheel',
+		shell => '/bin/bash',
+		home => '/home/username',
+		managehome => true,
+	}
+	providers take the description and enforce the desired state
+	Commands to assist:
+	puppet resource [type]
+	puppet resource [type] [name]
+	puppet resource user
+	puppet resource user root
+	Puppet describe -l <-list resource types available
+	puppet describe -s [type]
+	puppet describe [type]
+	ex:
+	puppet resource package
+	puppet describe user
+	puppet describe -s user <-short description
+<b>Facter</b>
+	cross platform system library
+	info about node during convergence system ip, OS
+	commands:
+	facter, facter osfamily, facter hostname, facter memory
+	we can use these facts to write classes and conditional logics
+<b>LiveManagement</b>	
+	part of orchastration (Mcollective)
+	on gui puppet goto livemanagement
+	we have node filter,in advanced class, fact 
+	on right side we can manage it like package,groups etc 
+	we can use CLI
+<b>catalog Compilation</b>	
+	catalog and any logic for determining resources in DSL are compiles on the master 
+	during convergence node downloads compiled catalog and enforce the desired state
+	catalogs can be stord in puppetDB, so catalog info can be queried
+	catalog describes
+		retrive the node object
+		evaluate the main manifest
+		load and evaluate classes from modules
+<h3 class="hh1" onclick="toggle_visibility('d4')">Module Structure and Class</h3>
+<div id="d4">	cd /etc/puppetlabs/puppet/modules
+	mkdir localusers 
+	cd localusers
+	mkdir {files,manifests,templates,tests}
+	cd manifests <-to write our classes
+	vim init.pp
+	class localusers{	<- defined class
+		user {'admin':
+			ensure	 	=> present,
+			gid 		=> 'wheel',
+			shell 		=> 'bin/bash',
+			home 		=> '/home/admin',
+			managehome	=> true,
+		}
+		user {'user1':
+			ensure	 	=> present,
+			shell 		=> 'bin/bash',
+			home 		=> '/home/admin',
+			managehome	=> true,
+			groups		=> ['wheel','finance'],
+		}
+	}
+	save and exit 
+	cd /etc/puppetlabs/puppet/modules/localusers/test
+	vi init.pp
+	include localusers 
+	save and exits
+	puppet apply -noop init.pp<- to see any changes to system 
+	puppet appy --noop --debug init.pp <-to see info while running puppet apply 
+	puppet apply init.pp <- applies all config settings to local system
+	mkdir groups
+	cd localusers/manifests/groups
+	vim wheel.pp
+	class localusers::groups::wheel { <- this class name represents class location
+		group {'wheel':
+			ensure 		=> present,
+			members 	=> admin,
+		}
+	}
+	vim finance.pp
+	class localusers::groups::finance { <- this class name represents class location
+		group {'finance':
+			ensure 		=> present,
+		}
+	}
+	puppet parser validate init.pp <-parser validates init.pp or groups/wheel.pp file for sysntax errors only 
+	puppet apply init.pp <- gives you error because finance group doesn't exit
+	cd /etc/puppetlabs/puppet/modules/localusers/test
+	vi init.pp
+	include localusers 
+	include localusers::groups::finance
+	include localusers::groups::wheel
+	save and exits
+	puppet apply init.pp <-now it creates user1 puppet has knowledge to auto order of execution for dependency
+	<b>declaring class</b>
+	cd /etc/puppetlabs/puppet/manifest/site.pp
+	node "nodehostname1"{
+		include localusers
+		include localusers::groups::wheel
+		include localusers::groups::finance
+		notify{'this is a test notify':}
+	}
+	save and exit 
+	on node
+	puppet agent -t <-for testing
+	puppent agent <-to enforce classes on node
+	we can use regular expression to define node name</div> 
+<h3 class="hh1" onclick="toggle_visibility('d5')">DSL Overview</h3>
+<div id="d5">	<b>common resource type:file</b>
+	cd /etc/puppetlabs/puppet/manifests/
+	mkdir filedemo
+	cd filedemo
+	mkdir {files,manifeste,tests}
+	cd manifests
+	vim init.pp
+	class filedemo{
+		file{'/root/motd':			<-file name
+			ensure 	=> present,		<-ensures file present else creates
+			content => 'this is my motd file managed by content attribute', <-contet shuld match with existing else replace it with this
+			owner 	=> root,
+			group 	=> root,
+			mode	=>'0644',
+		}
+		file{'/etc/motd':
+			ensure	=> link,	<-creates if not present, and this is symlink
+			target 	=> '/root/motd', <- in case link target must be there
+		}
+	}
+	puppet parser validate init.pp 
+	cd tests
+	vim init.pp
+	include filedemo
+	puppet apply -noop init.pp
+	puppet apply init.pp
+	cd /etc/puppetlabs/puppet/modules/filedemo/manifests
+	vim init.pp
+	class filedemo{
+		file{'/root/motd':			<-file name
+			ensure 	=> present,		<-ensures file present else creates
+			<i>source 	=> 'puppet:///modules/filedomo/motd',</i> <now the content of the file should match with the motd file in files directiory
+			owner 	=> root,
+			group 	=> root,
+			mode	=>'0644',
+		}
+		file{'/etc/motd':
+			ensure	=> link,	<-creates if not present, and this is symlink
+			target 	=> '/root/motd', <- in case link target must be there
+		}
+	}
+	cd files
+	vim motd
+	 this is a file managed from the directory inside puppet
+	save and exit
+	puppet parser validate init.pp
+	puppet apply init.pp
+	<b>common resource type:package</b>
+	package{'tree':
+		ensure => present,
+	}
+	we can install multiple packages in an array
+	package{['tree','bind-utils']:
+		ensure => present,
+	}
+	<b>common resource type:service</b>
+	service{'sshd':
+		ensure => running,
+		enable => true,
+	}
+	ensure : stopped/running 
+	enable : true/false <- boottime start or stop
+	<b>case Statement</b>
+	case $osfamily{
+		'RedHat':{
+			$ssh_name='sshd'
+		}
+		'Debian':{
+			$ssh_name='ssh'
+		}
+		'default':{
+			Warning('OSfamily does not match')
+		}
+	}
+	service{'resource-name':  <-resource-name can be anything which we use to reference this servicde in future
+		name=$ssh_name,
+		ensure =>	running,
+		enable => true,
+	}
+	<b>if Statement</b>
+	if condition{
+	}elsif condition{	<- elsif check spell
+	}else{
+	}
+	$apache=true
+	if $apache{
+		file{'/etc/motd':ensure=>present,content=>'Apachewebserver',}
+	}else{
+		file{'/etc/motd':ensure=>present,content=>'unassigned server',}
+	}
+	negative if : unless
+	
+	Unless $memorytotal>1024{	<-works only if condition is false
+		$maxclient=300
+	}
+	<b>dependencies and relationships</b>
+	require<-requirement,
+	package{'ssh1':
+		name => 'openssh',
+		ensure => present,
+	}
+	service{'sshd':
+		ensure => running,
+		enable => true,
+		require=>Package['ssh1'],		<-upper P in package that means we are refering to resource inside puppet
+	}
+	before <-should be before other resource,
+	package{'ssh1':
+		name => 'openssh',
+		ensure => present,
+		before => Service['sshd'],		<- upper S in service
+	}
+	service{'sshd':
+		ensure => running,
+		enable => true,
+	}
+	subscribe <-listen for any modification by puppet,
+	file{'/etc/ssh/sshd_config':
+		ensure => present,
+		source => 'puppet:///modules/ssh/ssh_config',
+	}
+	service{'sshd':
+		ensure => running,
+		enable => true,
+		subscribe => File['/etc/ssh/sshd_config'],
+	}
+	notify <- manually send notification
+	file{'/etc/ssh/sshd_config':
+		ensure => present,
+		source => 'puppet:///modules/ssh/ssh_config',
+		notify => Service['sshd'],
+	}
+	service{'sshd':
+		ensure => running,
+		enable => true,
+	}
+	<b>metaparameters</b>
+	schedule 
+	alias
+	audit <-will check if an attrinute for the resource from last puppet agent
+	noop <-tells the resource not to execute
+	loglevel <-debug, info, notice, warning, err, alert, emerg, crit, verbose
+	tag <-sets specific tag for a given resource type</div>
+<b>Arrays and Services</b>	
+	network time protocol-NTP
+	ssh
+	cd /etc/puppetlabs/puppet/modules
+	we are creating base module 
+	mkdir base
+	cd base
+	mkdir {manifests,files,tests}
+	cd manifests
+	vim init.pp
+	class base{
+		package{['tree','bind-utils']:		<-[] this is array
+			ensure => present,
+			enable => true,
+		}	
+	}
+	cd tests 		<- this step is optional
+	vim init.pp
+	include base 
+	puppet apply init.pp
+	we can use array for multiple dependencies 
+<b>dependency and relationships</b>	
+	cd /etc/puppetlabs/puppet/modules/base/manifests
+	vim ssh.pp
+	class base::ssh{
+		package{'openssh-pkge':
+			name	=> 'openssh',
+			ensure	=> present,
+		}
+		file{'/etc/ssh/sshd_config':
+			ensure 	=> file,
+			owner	=> root,
+			group	=> root,
+			require => Package['openssh-pkge],
+			source	=> 'puppet:///modules/base/sshd_config',
+		}
+		service{'sshd'
+			ensure	  => running,
+			enable    => true,
+			subscribe => File['/etc/ssh/sshd_config'],
+		}
+	}
+	cd files
+	copy sshd_config file from /etc/ssh/ and make some changes
+	cd tests
+	vim init.pp
+	include base::ssh
+	puppet parser validate ssh.pp
+	puppet apply ssh.pp
+	<b>SSH class to node</b>
+	cd /etc/puppetlabs/puppet/modules/base/files
+	chmod 0644 sshd_config		<- such that node can download the file
+	cd /etc/puppetlabs/puppet/manifests/
+	vim site.pp
+	#under certified node
+	node "nodehostname1"{
+		include localusers
+		include localusers::groups::wheel
+		include localusers::groups::finance
+		<i>include base
+		include base::ssh</i>
+		notify{'this is a test notify':}
+	}
+	node runs puppet agent every 30 mins if needed run puppet agent on node
+<b>Before and notify</b>
+	cd /etc/puppetlabs/puppet/modules/base/manifests/
+	vim ssh.pp
+	class base::ssh{
+		package{'openssh-pkge':
+			name	=> 'openssh',
+			ensure	=> present,
+			<i>before	=> File['/etc/ssh/sshd_config'],</i>
+		}
+		file{'/etc/ssh/sshd_config':
+			ensure 	=> file,
+			owner	=> root,
+			group	=> root,
+			source	=> 'puppet:///modules/base/sshd_config',
+			<i>notify	=> Service['sshd'],</i>
+		}
+		service{'sshd'
+			ensure	  => running,
+			enable    => true,
+		}
+	}
+<b>Conditional Statement</b>
+	facter osfamily <- to know n0de os family
+	cd /etc/puppetlabs/puppet/modules/base/manifests/
+	vim ssh.pp
+	class base::ssh{
+		<i>case $osfamily{
+			'RedHat':{$ssh_name='sshd'}
+			'Debian':{$ssh_name='ssh'}
+			default:{Warning ('OS not supported by puppet module ssh')}
+			#default:{fail('OS not supported by puppet module ssh')}
+		}
+		#$ssh_name=$osfamily?{		<-selector statements
+		#	'RedHat'	=>'sshd',
+		#	'Debian'	=>'ssh',
+		#	default		=> 'value',
+		#}</i>
+		package{'openssh-pkge':
+			name	=> 'openssh',
+			ensure	=> present,
+			before	=> File['/etc/ssh/sshd_config'],
+		}
+		file{'/etc/ssh/sshd_config':
+			ensure 	=> file,
+			owner	=> root,
+			group	=> root,
+			source	=> 'puppet:///modules/base/sshd_config',
+			<i>notify	=> Service['ssh-service'],</i>
+		}
+		service{'ssh-service'
+			<i>name	=> $ssh_name,</i>
+			ensure	=> running,
+			enable  => true,
+		}
+	}
+	Conditional expressions 2 ways
+	1) that alter logic
+		unless,case,if
+			can't use inside resource defination
+	2) that return value
+		selectors
+			selectors can't be used inside any other statements
+			package{'resource-title':
+				name	=>$::osfamily?{		<-::indicates top level variable
+					'RedHat'	=>'httpd',
+					'Debian'	=>'apache',
+					default		=> 'httpd',
+				}
+			}
+	
+	always use dsefault value best practice else puppet compile fails,
+	if default is not true value it causes different issue but compiles.
+	<b>regular expression if statements</b>
+	cd /etc/puppetlabs/puppet/modules/base/manifests
+	vim if.pp
+	class base::if{
+		if $::hostname =~ /^antony(\d+)/{			<-  =~ means we are evaluating regular expressions
+			notice("you have arrived at server $0")	<- $0 prints value of /^antony(\d+)/ like antony1 or antony01
+		}
+	}
+	cd tests
+	vim init.pp
+	include base::if
+	puppet apply if.pp
+	<b>ubuntu node</b>
+	cd /etc/ssh/
+	vim sshd_config 
+	enable root login
+	save and exit
+	curl -k https://puppetmaster-domain-name:8140/packages/current/install.bash | sudo bash
+	gives you an error copy the code and 
+	on master  in site.pp
+	add node "masyterhostname"{
+		paste the code 
+		include pe_repo::platform::ubuntu_1404_amd64
+	}
+	save and exit
+	puppet agent -t <- on master to update master
+	on node curl -k https://puppetmaster-domain-name:8140/packages/current/install.bash | sudo bash
+	puppet agent -t <- it fails
+	on master
+	puppet cert list
+	puppet cert sign certname(hostname)
+	in site.pp
+	add node2 details
+	node /^antony(\d).mylabserver.com/{		<-we can use regular express to add for group of nodes and remove double quotes
+		include localusers
+		include localusers::groups::wheel
+		include localusers::groups::finance
+		include base
+		include base::ssh
+		include base::if
+	}
+	on node 
+	puppet agent -t
+	it give one error that bind-utils not found because in debian it is called dnsutils
+	on master
+	cd base/manifests
+	vim init.pp
+	class base {
+		$dnsutil =$osfamily?{
+			'RedHat' =>'bind-utils',
+			'Debian' => 'dnsutils',
+			default => 'bind-utils',
+		}
+		package{['tree',$dnsutil]:
+		ensure =>present,
+		}
+	}
+<b>metaparameters</b>
+	cd base/manifests
+	vim ssh.pp
+	<textarea rows="14" cols="150">
+	class base::ssh{
+		case $osfamily{
+			'RedHat':{$ssh_name='sshd'}
+			'Debian':{$ssh_name='ssh'}
+			default:{Warning ('OS not supported by puppet module ssh')}
+			#default:{fail('OS not supported by puppet module ssh')}
+		}
+		#$ssh_name=$osfamily?{		<-selector statements
+		#	'RedHat'	=>'sshd',
+		#	'Debian'	=>'ssh',
+		#	default		=> 'value',
+		#}
+		package{'openssh-pkge':
+			name	=> 'openssh',
+			ensure	=> present,
+			before	=> File['/etc/ssh/sshd_config'],
+		}
+		file{'/etc/ssh/sshd_config':
+			ensure 	=> file,
+			owner	=> root,
+			group	=> root,
+			source	=> 'puppet:///modules/base/sshd_config',
+			notify	=> Service['ssh-service-name-two'],
+		}
+		service{'ssh-service'
+			name	=> $ssh_name,
+			ensure	=> running,
+			alias	=> 'ssh-service-name-two',
+			enable  => true,
+		}
+	}</textarea>
+	vim init.pp
+	class base {
+		$dnsutil =$osfamily?{
+			'RedHat' =>'bind-utils',
+			'Debian' => 'dnsutils',
+			default => 'bind-utils',
+		}
+		<i>$systemupdate = $osfamily?{
+			'RedHat' =>'/usr/bin/yum update -y',
+			'Debian' => '/usr/bin/apt-get upgrade -y',
+		}</i>
+		package{['tree',$dnsutil]:
+		ensure =>present,
+		}
+		<i>schedule{'system-daily':
+			period 	=> daily,
+			range	=> '00:00 - 01:00',
+		}
+		exec { $systemupdate:
+			schedule	=> 'system-daily',
+		}</i>
+	}
+<b>Resource defaults and files</b>
+	cd filedemo/manifests
+	vim init.pp
+	class filedemo{
+		<i>File{
+			owner => 'root',
+			group => 'finance',
+			mode => '0660',
+		}
+		$homedir="/root"
+		file{"${homedir}/myfile.txt":		<- t0 use variables use double quotes
+			content => 'myfile content',
+		}
+		file{"${homedir}/myfile2.txt":
+			content => "my file content 2",
+		}
+		file{"${homedir}/myfile3.txt":
+			content => "my file content 3",
+			owner	=> admin,
+			group	=> root,
+		}
+		</i>
+		file{'/root/motd':			
+			ensure 	=> present,		
+			source 	=> 'puppet:///modules/filedomo/motd',
+			owner 	=> root,
+			group 	=> root,
+			mode	=>'0644',
+		}
+		file{'/etc/motd':
+			ensure	=> link,	<-creates if not present, and this is symlink
+			target 	=> '/root/motd', <- in case link target must be there
+		}
+	}
+	cd tests
+	puppet apply init.pp
+	now the file have defaults where not mentioned like owner and mode etc.
+<b>variables and Parameterized classes</b>
+	variable starts with $
+	single quote means it takes literally
+	double quotes means evaluate the variable
+	$var = 'hello',$variable="$var world" =>hello world
+	$var =['hello','world'],$var+=['item3'] => $var=['hello','world','item3']
+	Scope
+		1.Top scope	<- declared in site.pp,ex:facts,::osfamily 
+		2.Node scope <-variable defined within specific node definition
+		3.Class scope <- defined within class
+	priority to class then node then top 
+	parameterized class 
+		to redue calculation of parameters from within the class doing the work
+		the parameter class will handle conditional statements related to distributions
+	cd /etc/puppetlabs/puppet/modules/base/manifests
+	vim param.pp
+	class base::params{
+		case $::osfamily{
+			'RedHat':{$ssh_name='sshd'}
+			'Debian':{$ssh_name='ssh'}
+			default:{Warning ('OS not supported by puppet module ssh')}
+			#default:{fail('OS not supported by puppet module ssh')}
+		}
+		#$ssh_name=$osfamily?{		<-selector statements
+		#	'RedHat'	=>'sshd',
+		#	'Debian'	=>'ssh',
+		#	default		=> 'value',
+		#}
+	}
+	vim ssh.pp
+	class base::ssh{
+		package{'openssh-pkge':
+			name	=> 'openssh',
+			ensure	=> present,
+			before	=> File['/etc/ssh/sshd_config'],
+		}
+		file{'/etc/ssh/sshd_config':
+			ensure 	=> file,
+			owner	=> root,
+			group	=> root,
+			source	=> 'puppet:///modules/base/sshd_config',
+			notify	=> Service['ssh-service-name-two'],
+		}
+		service{'ssh-service'
+			<i>name	=> $base::params::ssh_name,</i>		<-accessing base params class attributes
+			ensure	=> running,
+			alias	=> 'ssh-service-name-two',
+			enable  => true,
+		}
+	}	
+	add prams class to tests/init.pp  and site.pp
+	puppet apply ssh.pp
+<b>Inheritance</b>
+	allows us to extend existing class to use local scope variables
+	should only be used to reduce code repetition like overide
+	doesnot support parameterized classes,decreases modularity,
+	increase compile time of the catalog,becomes issue in readability with local scope.
+	example:
+	class apache{
+		service{'apache':
+			require => Package['httpd'],
+		}
+	}
+	class apache::ssl inherits apache{
+		Service['apache']{
+			require +> [File['apache.pem'],File['httpd.conf']],	<- to add more requirements to existing code
+		}
+	}
+<b>rvalue functions</b>
+	functions that returns a value
+	defined functions <-returns true/false
+	if defined(Service['httpd']){
+		notify{'the service resource typr has been defined':}
+	}
+	file <-returns contents of a file from the server
+	generate <- returns the result of a run shell command
+	regsubst <-$var =regsubst($string,'regexto evaluate here')
+	sha1 <-returns a SHA1 has value from the string
+	template <-load an erb template from module,evaluate template,returns the resulting contents as a string to the resource type
+	example:
+		file{'/etc/motd':
+			ensure => file,
+			content => template('modulename/motd.erb'),
+		}
+<b>Template</b>
+	cd /etc/puppetlabs/puppet/modules/base
+	mkdir templates
+	cd templates
+	vim motd.erb	<- template is ruby template
+	<textarea rows="2" cols="100">
+	This node is managed <%=@author %>	<- <%= is evaluate @ is variable %> 
+	</textarea>
+	save and exit
+	cd modules/base/manifests
+	vim motd.pp
+	class base::motd{
+		$author = "yuvasimha"
+		file{'/etc/motd':
+			ensure  => file,
+			owner   => root,
+			group   => root,
+			content => template('base/motd.erb'),
+			mode    => "0644",
+		}
+	}
+	add to tests to test
+	we can also use parameterized class
+<b> Creating the NTP Class</b>	
+	Network Time Protocol
+	cd /etc/puppetlabs/puppet/modules
+	mkdir ntp
+	cd ntp
+	mkdir {manifests,templates,tests}
+	cd manifests
+	vim init.pp
+	class ntp{
+		package{'ntp':
+			ensure => present
+		}
+	}
+	add to tests to test
+	puppet apply init.pp
+	inside templates directory
+	cp /etc/ntp.conf ntp.conf.erb
+	vim site.pp
+	node "nodehostname1"{
+	include ntp 
+	}
+	puppet -t agent on both ubuntu and centos nodes
+	ntp.conf file is different for ubuntu and centos
+	on ubuntu 
+	cd /etc
+	scp /etc/ntp.conf user@masterhostame:~/
+	on master
+	cp /home/user/ntp.conf /etc/puppetlabs/puppet/modules/ntp/templates/ntp_ubuntu.conf.erb
+	cd ntp/manifests
+	vim file.pp
+	class ntp::file{
+		$template=$ntp::params::template
+		$servers = $ntp::params::default_servers
+		file{'/etc/ntp.conf':
+			ensure => file,
+			require =>Package['ntp'],
+			content => template("ntp/${template}.erb"),
+		}
+	}
+	vim params.pp
+	class ntp::params{
+		$package_name="ntp",
+		case $::operatingsystem{
+			'ubuntu':{
+				$template='ntp_ubuntu.conf',
+				$service_name='ntp',
+				$default_servers=["0.ubuntu.pool.ntp.org",
+									"1.ubuntu.pool.ntp.org",
+									"2.ubuntu.pool.ntp.org",
+									"3.ubuntu.pool.ntp.org",]
+			}
+			'centos':{
+				$template='ntp_centos.conf',
+				$service_name='ntpd'
+					$default_servers=["0.centos.pool.ntp.org iburst",
+									"1.centos.pool.ntp.org iburst",
+									"2.centos.pool.ntp.org iburst",
+									"3.centos.pool.ntp.org iburst",]
+			}
+			default:{fail("OS $::operatingsystem is not suporting")}
+		}
+	}
+	vim service.pp
+	class ntp::service{
+		$service_name=$ntp::params::service_name
+		service{'ntp_service':
+			name	=> $service_name,
+			ensure 	=> running,
+			enable 	=> true,
+			subscribe => File['/etc/ntp.conf'],
+		}
+	}
+	vim init.pp
+	class ntp{
+		package{'ntp':
+			ensure => present
+		}
+		include ntp::params
+		include ntp::file
+		include ntp::service
+	}
+	puppet apply init.pp
+	inside templates 
+	vim ntp_centos.conf.erb and ntp_ubuntu.conf.erb
+	remove servers and add
+	<textarea rows="3" cols="100">
+	<% @servers.each do |server|-%>
+	server <%=server%>
+	<% end -%></textarea>
+	puppet apply init.pp
+<b>Resource Collectors</b>
+	to grab group of resources by searching	based of resource attributes
+	example:
+	cd /modules/filedemo/manifests
+	vim rc.pp
+	class filedemo::rc{
+		File <|owner=='root'|> 	<-search files with owner root
+		or File <| |> {			<- to search all files
+			group => 'finance',
+			mode => '0664',
+			require +> 				<- to append requirements
+		}
+	}
+<b>Adding class parameters</b>	
+	this is done only to avoid include ntp::params class
+	cd modules/ntp/manifests
+	vim init.pp
+	<i>class ntp ($package=$ntp::params::package_name)inherits ntp::params{</i>
+		package{'ntp':
+			name => $package,
+			ensure => present,
+		}
+		include ntp::file
+		include ntp::service
+	}
+	we can pass parameter from node defining
+	example:
+	vim site.pp
+	node "nodehostname1"{
+	#include ntp 
+	<i>class { 'ntp': package=> 'ntp',}</i>
+	}
+	vim init.pp
+	<i>class ntp ($package)inherits ntp::params{</i>
+		package{'ntp':
+			name => $package,
+			ensure => present,
+		}
+		include ntp::file
+		include ntp::service
+	}
+	Scope
+		local variables
+		Hiera
+		class initialization
+		default initialization
+		node variables
+	variable name can contain 
+		Uppercase,lower case,numbers,underscores
+		can't have dashes ex server-name and $string is reserved 
+	class names must start with lower case
+		include lowercase , numbers and underscores
+		reserved class names 'main' and 'settings'
+	module names must start lowercase
+		include numbers,lowercase and underscores
+<h3>Roles and profiles</h3>
+	classify nodes by roles and roles call profiles
+	profiles: is a stack of tecnology configuration and class declarations which also define class parameters if required and contain minimal logic
+	ex:
+	class profiles::apache($parameters =$apache::param::param){
+		include apache
+		include php
+		include phpmyadmin
+		#include any other declarations and parameters passing as required
+	}
+	Roles: is based off a bussiness function. i.e WEDSERVER/DATASERVER/ETC
+	ex:
+	class roles::webserver{
+		include profiles
+		#should contain no logic
+		#cleans up our node definitions
+	}
+<b>Create Profiles module</b>	
+	cd /etc/puppetlabs/puppet/modules
+	mkdir profiles
+	cd profiles
+	mkdir {manifests,tests,files,templates}
+	cd manifests/
+	vim init.pp
+	class profiles{
+	
+	}
+	vim base.pp
+	class profiles::base{
+		include base
+		include base::params 
+		include base::ssh
+		include base::variables
+		include localusers
+		include localusers::groups::finance
+		include localusers::groups::wheel
+		include ntp
+	}
+	add to tests to test
+	puppet apply base.pp
+	mkdir apache
+	cd apache
+	mkdir {templates,manifests,files,tests}
+	cd manifests
+	vim init.pp
+	class apache{
+		package{'httpd':
+			ensure => present,
+			enable => true,
+		}
+	}
+	in profiles
+	cd profiles/manifests
+	vim apache.pp
+	class profiles::apache{
+		include apache
+	}
+<b>roles</b>
+	cd modules/
+	mkdir roles
+	cd roles
+	mkdir {manifests,files,tests,templates}
+	cd manifests
+	vim init.pp
+	class roles{
+		
+	}
+	vim webserver.pp
+	class roles::webserver{
+		include profiles::base
+		include profiles::apache
+	}
+	cd puppet/manifests
+	vim site.pp
+	node "nodehostname1"{
+		include role::webserver
+	}
+	#node /^nodehostname\d{1}/{
+	#	include role::webserver
+	#}
+	if a node matches two node declarations, the node execute the declaration that matches exarct node name.
+<h3>Hiera</h3>	
+	is key:value  lookup tool that is buit to provide node-specific data.
+	adv:
+		easier to configure data on a per-node basis, ex:Dev API URLS
+		easier to reuse puppet forge (public) modiles without having to edit classes
+		keep node configuration in one place and make it easy to override when necessary
+	Hiera config file /etc/puppetlabs/puppet/hiera.yaml
+	automatic parameter lookup
+		look for parameters passed using the class{} declaration
+		if no pass parameters it will look in heira source for the parameter heirademo::parameter
+		if not found in hiera data source it will use the default set class()
+	hiera.yaml
+		:backends:
+		-yaml
+		-json
+		
+		:hierarchy:
+		-default
+		-"%{clientcert}"	<-searches in antony1 node inside /var/lib/hiera/antony1.yaml
+		-"%{environment}"	<-"""	""		production inside	/var/lib/hiera/production.yaml
+		-"%{::osfamily}"	<-"""	""		RedHat inside /var/lib/hiera/RedHat.yaml
+		
+		:yaml:
+		#datadir is empty here, so hiera uses its defaults:
+		#-/var/lib/hiera on *nix
+		#-%CommonAppData%\PuppetLabs\hiera\var on windows
+		#when specifying a datadir, make sure the directory exits.
+		:datadir:
+	it follows top to bottom order to search parameter
+	hiera lookup function
+		hiera <- it will grab first matching value from the datasource 
+		hiera_array <-will return all possible matches from all data sources, if hash is found then lookup will fail
+		hiera_hash	<-grabs a matching value from every level in the hierarchy and retrives all hash values and merge them into single hash
+<b>setting up Configuration file and Datasources</b>
+	cd /etc/puppetlabs/puppet/
+	mkdir hieradata
+	cd hieradata
+	mkdir node
+	cd /etc/puppetlabs/puppet/
+	vim hiera.yaml
+	:backends:
+		-yaml
+		-json
+	:hierarchy:
+		-default
+		- "node/%{clientcert}"	<-it will search in node dir for clientcert.yaml file
+		- "%{environment}"
+		- "%{::osfamily}"	
+		- common
+		
+	:yaml:
+		#datadir is empty here, so hiera uses its defaults:
+		#-/var/lib/hiera on *nix
+		#-%CommonAppData%\PuppetLabs\hiera\var on windows
+		#when specifying a datadir, make sure the directory exits.
+		:datadir: /etc/puppetlabs/puppet/hieradata
+	cd hieradata/node
+	vim clientcert.yaml
+	---
+	hierademo::domain_name: parameter.mylabserver.com		<-auto loading without need to call from class
+	domain_name: antony1.mylabserver.com
+	api_key: antony1_api_key
+	cd hieradata
+	touch production.yaml
+	touch development.yaml
+	vim common.yaml
+	---
+	domain_name: www.saibersys.com
+	api_key: common_api_key
+	vim development.yaml
+	---
+	domain_name: dev.saibersys.com
+	api_key: dev_api_key
+	vim production.yaml
+	---
+	domain_name: prod.saibersys.com
+	api_key: prod_api_key
+	vim RedHat.yaml
+	---
+	domain_name: redhat.saibersys.com
+	api_key: redhat_api_key
+	
+	hiera domain_name clientcert=antony1.mylabserver.com	<- to check data from hiera
+	hiera domain_name environment=production	
+	hiera domain_name environment=wdshohdo		<- when result doesnot exit it provides common/global.yaml data	
+	
+	example:
+	cd /etc/puppetlabs/puppet/modules
+	mkdir hierademo
+	cd hierademo
+	mkdir {files,manifests,tests,templates}
+	cd manifests
+	vim init.pp
+	class hierademo ($domain_name="default",$api_key="default_api_key"){
+		$domainname=hiera('domain_name')
+		#$domainname=hiera_array('domain_name')
+		notify {"The Domain name value is : ${domainname}":}
+		notify {"The Domain name value is : ${domain-name}":}
+		notify{"The api key value is : ${api_key}":}
+	}
+	include hierademo under node in site.pp to run puppet agent -t
+<h3 class="hh1" onclick="toggle_visibility('d6')">Building Apache module</h3>	
+<div id="d6"><b>trobleshoot</b> when old host cert is clashed with new host cert
+	on node ubuntu
+	curl - k https://puppet_master_hostname:8140/packages/current/install.bash | bash
+	puppet agent -t 	<- this will fail if the host name is already in master cert list
+	on master 
+	puppet cert list --all
+	now we have to remove oldhostname.pem key
+	puppet cert clean oldhostname
+	on node 
+	rm -f /etc/puppetlabs/puppet/ssl/certs/hostname.pem
+	puppet agent -t
+	on master 
+	puppet cert list
+	puppet cert sign newhostname
+<b>installing apache</b>
+	cd /etc/puppetlabs/puppet/modules/apache/manifests
+	vim init.pp
+	class apache(
+			$servername==$apache::params::servername
+			$package_name=$apache::params::package_name
+			$service_name=$apache::params::service_name
+			$conf_dir	=$apache::params::conf_dir
+			$vhost_dir	=$apache::params::vhost_dir
+			$document_root =$apache::params::document_root
+			$log_dir	=$apache::params::log_dir
+	)herits apache::params{
+		
+		include apache::package
+		include apache::service
+		
+		file{$document_root:
+			ensure => directory,
+			recurse => true,
+		}
+		file{$log_dir:
+			ensure => directory,
+			recurse => true,
+		}
+		apache::vhost{"default":			<-creating resource with define class vhost name to access it
+			port => 80,
+			document_root => $document_root,
+			servername => $servername,
+			vhost_dir => $vhost_dir,
+		}
+	}
+<b>parameters class</b>	
+	vim params.pp
+	class apache::params{
+		#specify a server name for a virtual host configuration files
+		if($::fqdn){
+			$servername=$::fqdn
+		}else{
+			$servername=$::hostname
+		}
+		$document_root = "/var/www/websites"
+		$log_dir = "/var/log/apache"
+		case $::osfamily{
+			'RedHat':{
+				$package_name = 'httpd'
+				$service_name = 'httpd'
+				$conf_dir	= "/etc/httpd/conf"
+				$vhost_dir	= "/etc/httpd/conf.d"
+			}
+			'Debian':{
+				$package_name = 'apache2'
+				$service_name = 'apache2'
+				$conf_dir	= "/etc/apache2"
+				$vhost_dir	= "/etc/apache2/sites-enabled"
+			}
+		}
+	}
+	
+<b>package</b>	
+	cd modules/apache/manifests
+	vim package.pp
+	class apache::package(
+		$package_name =$apache::params::package_name
+	){
+		package {'apache':
+			name => $package_name,
+			ensure => present,
+		}
+	}
+<b>service</b>	
+	vim service.pp
+	class apache::service(
+		$service_name =$apache::params::service_name
+	){
+		service {'apache':
+			name => $service_name,
+			ensure => running,
+			enable => true,
+			require =>Package['apache'],
+		}
+	}
+	
+	puppet parser validate *.pp
+	puppet apply --noop ../tests/init.pp
+<b>adding defined resource types</b>
+	when we have different vhosts running 
+	vim vhost.pp
+	<i>define apache::vhost(</i>
+		$port,$document_root,
+		$servername,$vhost_name="*",$vhost_dir
+	){
+		File{
+			mode => 0677,
+		}
+		
+		file{'index':
+			path    => "${document_root}/index.html",
+			ensure  => file,
+			content => template{'apache/indes.html.erb'},
+			before  => File['config_file'],
+		}
+		file{'config_file':
+			path => "${vhost_dir}/${servername}.conf",
+			content => template{'apache/vhost.conf.erb'},
+			require => Package['apache'],
+			notify => Service['apache'],
+		}
+	}
+<b>templates</b>	
+	vim vhost.conf.erb
+	<textarea rows="8" cols="75">
+	<virtualHost *:<%= @port =%>>
+		ServerName <%= @servername %>
+		
+		ServerAdmin webmaster@company.com
+		DocumentRoot <%= @document_root %>
+		
+		ErrorLog <%= @log_dir -%>/<%= @servername -%>-error.log
+		CustonLog <% @log_dir -%>/<%= @servername -%>-access.log combined
+	</virtualHost></textarea>
+	vim index.html.erb
+	<textarea rows="1" cols="100">
+	welcome to the default website <%= @servername %>!!!
+	</textarea>
+	cd tests
+	vim init.pp
+	include apache
+	puppet apply init.pp
+	add in site.pp under node 
+	puppet agent -t
+<b> Adding multiple Virtual hosts files</b>
+	We are adding multiple Virtual hosts on single server
+	cd /etc/puppetlabs/puppet/modules/apache/manifests
+	vim init.pp
+	class apache(
+			$servername==$apache::params::servername
+			$package_name=$apache::params::package_name
+			$service_name=$apache::params::service_name
+			$conf_dir	=$apache::params::conf_dir
+			$vhost_dir	=$apache::params::vhost_dir
+			$document_root =$apache::params::document_root
+			$log_dir	=$apache::params::log_dir
+	)herits apache::params{
+		
+		include apache::package
+		include apache::service
+		
+		file{$log_dir:
+			ensure => directory,
+			recurse => true,
+		}
+		apache::vhost{"default":			<-creating resource with define class vhost name to access it
+			port => 80,
+			document_root => $document_root,
+			servername => $servername,
+			vhost_dir => $vhost_dir,
+		}
+	<i>	apache::vhost{"antony1b":			<-creating resource with define class vhost name to access it
+			port => 80,
+			document_root => "${document_root}/antony1b",
+			servername => "antony1b.mylabservers.com",
+			vhost_dir => $vhost_dir,
+		}</i>
+	}
+	
+	vim vhost.pp
+	define apache::vhost(
+		$port,$document_root,
+		$servername,$vhost_name="*",$vhost_dir
+	){
+		File{
+			mode => 0677,
+		}
+		$default_index = "index_${servername}_${port}"
+		$default_config = "config_${servername}_${port}"
+		file{$document_root:
+			ensure => directory,
+			recurse => true,
+			before =>File[$default_index],
+		}
+		file{$default_index:
+			path    => "${document_root}/index.html",
+			ensure  => file,
+			content => template{'apache/indes.html.erb'},
+			before  => File[$default_config],
+		}
+		file{$default_config:
+			path => "${vhost_dir}/${servername}.conf",
+			content => template{'apache/vhost.conf.erb'},
+			require => Package['apache'],
+			notify => Service['apache'],
+		}
+	}
+	cd /apache/templates/
+	vim vhost.conf.erb
+	<textarea rows="10" cols="100">
+	namevirtualHost *:<%= @port -%>
+	<virtualHost *:<%= @port -%>>
+		ServerName <%= @servername %>
+		
+		ServerAdmin webmaster@company.com
+		DocumentRoot <%= @document_root %>
+		
+		ErrorLog <%= @log_dir -%>/<%= @servername -%>-error.log
+		CustonLog <% @log_dir -%>/<%= @servername -%>-access.log combined
+	</virtualHost></textarea>
+</div>	
+<h3>Node Classification</h3>	
+	every node should be declared a class in it
+	if node is not declared then default node should be accessed to avoid compilation error
+	1... node find exact matching first 
+	2... then if not found checks for regular expression match 
+	3... then if it looks like FQDN then it removes last group(like .com,) and start step 1 
+		if then nomacth found after all iteration then it goes to default node specification
+		antony1.mylabserver.com
+		antony1.mylabserver
+		antony1
+		then default.
+	if a node matches multiple regular expressions puppet will use one of them but no guarantee which one it will use.
+<b>External Node Classifiers(ENC)</b>
+	ENC is a arbitary script or application that can tell puppet which class a node should have. it either replaces or works with node definitions in the site manifest file (site.pp)
+	ENC can be enabled in puppet.conf by setting two followong settings
+		node_terminus=exec (it can be exec or console)
+		external_nodes-this is the path to the executable of the ENC
+	now we learn standard node classifiers
+	what if we have node definition in both site.pp and ENC 
+		it is merged together and execute
+<b>Classifying Node with the console</b>
+	https://nameofpuppetmaster
+	cd /etc/puppetlabs/puppet/modules
+	mkdir democonsole
+	cd democonsole
+	mkdir {templates,manifests,tests,files}
+	cd manifests
+	vim init.pp
+	class democonsole($param1="param 1 default"){
+		notify{"this is the variable console_test is ${console_test}"}
+		notify{"the value of our param1 paramenter is ${param1}":}
+	}
+	vim site.pp
+	comment out all the includes and classes of node
+	we will use console to add class
+	on console
+	classes are not avilable unless added 
+	so lets add them by add neww classes
+	it shows all the classes we created on master select classes you want to add
+	create node group
+	name: webserver
+	we can define variables here
+	console_test = console parameter for example
+	add classes here 
+	democonsole for example
+	now add nodes 
+	like masternode etc
+	create it 
+	we can edit this group details
+<b>using site.pp with An ENC</b>
+	vim site.pp
+	masternodedefinition{
+		class {'democonsole' : param1 => "this is from site.pp",$console_test => "this is console test form site.pp", }
+	}
+	1) if we run puppet agent on master node then 
+		it gives error because class is declared here and in console 
+		if we use <b>include class</b> instead of declaring it won't give error
+	2) if we declare console_test on both site.pp and console 
+		then <b>cosole</b> is given higher priority
+	3) if cosole_test is declared under site.pp rather than under node 
+		this gives error because site.pp and cosole declaration level is same 
+		we can't declare a variable twice on same level, we can only override 
+<h3 class="hh1" onclick="toggle_visibility('d7')">Puppet Management</h3>
+<div id="d7">	Inventory search
+	live management
+	groups
+	classes
+	reports
+<b>troubleshooting</b>
+installation issues
+	DNS	<-is not configued correctly /etc/config
+	Ports Open(3000,8140,443)
+	Configuration issues 
+	answer file
+	can't run master 3.x with agents other than 3.x
+	dns_alt_names-all potential host names for the puppet master need to be configured here during install
+	installing puppet master and console on seperate servers
+		ensure puppet master is installed before the console
+recover from a failed install	
+	fix the config issue that caused the failure
+	run puppet-enterprise-uninstaller
+	run the installer again
+Rake API for common tasks
+	reports:purne (rake task) - to clean out old reports
+	optimize dashboard database
+		RAILS_ENV=production db:raw:optimize
+	should be done monthly, needs to have a manual cronjob added
+	goto documents rake 
+	restart pe-puppet-dashboard-workers service
+		clears pending/dead workers
+	Autovacuum=on <-helps maintain and clean out old reports/logs from postgresql
+ERROR	
+	could not request certificate
+		remove the .pem key for the node from the nodes sl location /etc/puppetlabs/puppet/ssl/certs/hostname
+		clean the certificate off the master using puppet cert clean (certname)
+		run puppet agent again, then sign the certificate
+warning
+	unable to fetch my node definition
+	puppet master is unreachable
+		could be the server itself is not reachable(dns,networking,etc)
+		could also be the service itself is stopped and needs to be started
+<b>reporting</b>
+	info found on reports
+		total <-number of resources being managed
+		skipped
+		scheduled
+		outof sync
+		applied
+		failed 
+		restarted
+		failed restarts
+		total time for configuration run
+		how long it took to retrive the configuration
+	regular puppet error are stored in systems syslog
+	for reporting to enabled on the nade puppet.conf needs to have report setting set to true
+	puppet.conf example reports=tagmail,http
+	Builtin report processors
+		http-sends reports to https/htpp
+		tagmail-sends specific reports to specific email address
+		rrdgraph-garph all data in RRD library
+		log-send logs to local syslog
+		store - store reports in yaml form in the location specified int he reportdir setting
+	Plugin report processors
+		IRC
+		Twiter
+		Jabber
+		Hipchat
+		Growl
+		Campfire
+		PagerDuty
+<b>preparing puppet forge</b>
+	Puppet Module
+		is a command used to help manage building and downloading modules from the puppet forge
+		http://forge.puppetlabs.com
+		list <-lista all installed modules on the system
+		uinstall <- uninstall a puppet module
+		inatall
+			--version <-specifies which version to install
+			--modulepath <-specify which madule path to install to
+			--environment <-select the environment to install to
+			--force <-forcible install module
+			--debug <-see additional info about what is happening during install processors
+			--ignore <-skip install any dependencies required by this module
+		upgrade
+		search
+		build <- creates tarball to upload to forge
+		generate
+		changes
+	preparing a module for forge
+		make sure proper dir structure
+		populate metadata.json <- auto created when puppet module generate is used
+			includes dependencies
+		remove all symlinks
+		puppet module build (module dir) <-will buid a tar for upload to puppet forge
+	metadata.json
+		"dependencies":[
+		{"name":"ownership/module","version_requirement":">=0.1.0"}
+		{"name":"ownership/module2","version_requirement":">=0.1.0<0.5.0"}
+		]
+	we can use 1.2.x semantic versions but at same time <=> operator can't be used
+<b>Deactivating a node</b>
+	<ol><li>Stop the agent servive on the node</li>
+	<li>Deactivate the node on the master by using puppet node deactivate (cert name)</li>
+	<li>Revoke the certificate by using puppet cert clean (cert name)</li>
+	<li>Restart the puppet master service(pe-puppetserver restart) after cleaning cert</li>
+	<li>Delete the node on the console</li>
+	<li>Stop the mcollective service on the node</li>
+	<li> Remove mcollective certificates from the node rm -f /etc/puppetlabs/mcollective/ssl/client</li></ol>
+<b>Event Inspector</b>
+	on console
+	click on event 
+	if a node not met desired config then event occurs
+		classes
+		nodes
+		resources
+<b>External facts</b>
+	Custom Facts
+		written on th puppet master
+		are ruby block of code, mostly execute shell commmands and return a custom fact
+		executed on the puppet nodes with the external facts plugin module
+			$LOAD_PATH or the ruby library path
+			Environmenteal variable FACTERLIB
+			facts distributed using pluginsync
+				enable in the main section of puppet.conf by setting pluginsync=true
+	facter -p <-will load all the facts that have been distributed via pluginsync
+	example:
+		Facter.add('hardware_platform') do
+			setcode do
+				Facter::Core::Executeion.exec('/bin/uname --hardware-platform')
+			end
+		end	
+	External facts
+		enable the ability to use executable scripts or progams written with languages like c, perl, bash. 
+		essentially the scripts are executed as part of node during puppet agent run which populates the fact data
+		external facts can be referenced by ruby custom facts but not viceversa
+	pluginsync	
+		external and custom facts should be built and located in the lib/facter dir of a poppet module
+		the facts are loaded on the node as part of the puppet file server
+		the pluginsync in the main section needs to then be set to true.
+<b>Checking values of settings</b>
+	3 ways to do it <- to see puppet.conf variables
+	puppet master --configprint certname
+	puppet master --configprint vardir
+	puppet master --configprint user
+	puppet master --configprint ssldir
+	rm -rf ${puppet master --configprint ssldir} <- this will remove the ssl dir 
+	puppet agent --configprint certname
+	puppet config print  certname <-more generic it prints first available vale of cert name
+	puppet config print  certname --section master <- it return under master section
+<b>puppet resource command</b>
+		puppet resource user <- it shows all the users resource on our system regards less of puppet managing them
+		puppet resource package bind-utils esure=present	
+</div>	
+<h3>Resource Type Practice</h3>	
+<b>Host Resouce type</b>
+	cd puppet/modules
+	mkdir practice
+	cd practice
+	mkdir manifests
+	cd manifests
+	vim init.pp
+	class practice{
+		host{'webservero1':
+			name => 'webserver01.mylabserver.com',
+			ip => '10.1.1.1',
+			host_alias => ['web01','webhead01','webserver01'],
+			comment => 'this is our webserver primary',
+		}
+		host{'webserver5':
+			name => 'webserver5.mylabserver.com',
+			ip => '10.2.2.2',
+			comment => 'this is new comment',
+		}
+	}
+	puppet parser validate init.pp
+	vim site.pp
+	node "node2hostname"{
+		include practice
+	}
+	puppet agent -t
+	cd /etc/
+	cat hosts
+<b> Resource type Titles</b>	
+	modules/practice/manifests/
+	vim file.pp
+	class practice::file{
+		file {'/etc/motd':
+			content => 'welcome to myserver ',
+		}
+		file {'/etc/motd':
+			path => '/etc/motd.tail',
+			content => 'welcome to myserver2',
+		}
+	}
+	resource have same name so error out
+	class practice::file{
+		file {'motd1':
+			path => '/etc/motd',
+			content => 'welcome to myserver ',
+		}
+		file {'/etc/motd':
+			path => '/etc/motd',
+			content => 'welcome to myserver2',
+		}
+	}
+	same path diffrent titles so error out
+	puppet is case sensitive
+<b>mount</b>
+	mkfs xvdj  <-adding external disk or usb
+	practice/manifests/
+	vim mount.pp
+	class practice::mount{
+		file{'/content':
+			ensure => directory,
+		}
+		mount{'/content':
+			device => '/dev/xvdj',
+			fstype => 'ext2',
+			options => 'defaults',
+			ensure => 'mounted',
+			require => File['/content'],
+			#atboot => 'true',
+		}
+	}
+<b>puppet documentation</b>
+	puppetlabs.com
+		docs
+			type reference	
+			
+<h3>Examples</h3>
+	<a href="https://docs.puppet.com/pe/latest/install_windows.html" target="_blank">Windows Install</a>
+	<a href="https://www.digitalocean.com/community/tutorials/getting-started-with-puppet-code-manifests-and-modules" target="_blank">Puppet Basics</a>		
+</pre>
+</body>
+</html>
